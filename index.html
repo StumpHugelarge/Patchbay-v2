@@ -306,8 +306,8 @@
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Studio Patchbay Documentation</span>
-      <span class="brand-mark">Patch<span>·</span>Sheet</span>
+      <span class="eyebrow">Carter's Studio Tools</span>
+      <span class="brand-mark">Patch<span>·</span>Configurator v2</span>
     </div>
     <div class="section-tabs" id="sectionTabs" role="tablist" aria-label="Patchbay type"></div>
     <div class="topbar-meta">
@@ -972,7 +972,7 @@ function renderInspector(){
   var bay = getActiveBay();
   var ports = selectedPorts(bay);
   if(!bay || ports.length === 0){
-    host.innerHTML = '<div class="insp-bar"><p class="insp-empty">Select a port below to edit it. Shift-click for a range, ⌘/Ctrl-click to add ports individually — handy for coloring every input on one device at once.</p></div>';
+    host.innerHTML = '<div class="insp-bar"><p class="insp-empty">Select a port to edit it. Shift-click for a range, ⌘/Ctrl-click to add ports individually.</p></div>';
     return;
   }
   if(ports.length === 1){
