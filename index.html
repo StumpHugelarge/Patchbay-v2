@@ -1,0 +1,2296 @@
+<title>Patch·Configurator v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#E7EAE8; --surface:#FFFFFF; --surface-2:#F2F4F3;
+    --metal:#C9CFCC; --metal-2:#BCC3BF; --metal-cell:#DBE0DD;
+    --border:#C1C7C4; --border-strong:#9DA4A0;
+    --ink:#17181A; --ink-soft:#525855; --ink-faint:#7C837F;
+    --accent:#2C8567; --accent-ink:#FFFFFF; --accent-soft:#DCEFE8;
+    --danger:#B8442D; --danger-soft:#F6E1DC; --danger-ink:#FFFFFF;
+    --radius-sm:4px; --radius-md:8px; --radius-lg:12px;
+    --font-display:"Big Shoulders Display","Arial Narrow",sans-serif;
+    --font-body:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+    --font-mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+    --shadow-1:0 1px 2px rgba(20,24,22,.08),0 1px 1px rgba(20,24,22,.06);
+    --shadow-2:0 12px 32px rgba(20,24,22,.18);
+    --brush-line: rgba(20,24,22,.05);
+    --grid-dot: rgba(20,24,22,.06);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#16181A; --surface:#1F2224; --surface-2:#262A2C;
+      --metal:#2B2F31; --metal-2:#34383A; --metal-cell:#2F3335;
+      --border:#3B4042; --border-strong:#4C5254;
+      --ink:#ECEFED; --ink-soft:#AEB5B1; --ink-faint:#7E8582;
+      --accent:#4FC79A; --accent-ink:#0D1512; --accent-soft:#1E3730;
+      --danger:#E2694A; --danger-soft:#3A211B; --danger-ink:#1A0E0A;
+      --shadow-1:0 1px 2px rgba(0,0,0,.4);
+      --shadow-2:0 16px 36px rgba(0,0,0,.5);
+      --brush-line: rgba(255,255,255,.04);
+      --grid-dot: rgba(255,255,255,.055);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#16181A; --surface:#1F2224; --surface-2:#262A2C;
+    --metal:#2B2F31; --metal-2:#34383A; --metal-cell:#2F3335;
+    --border:#3B4042; --border-strong:#4C5254;
+    --ink:#ECEFED; --ink-soft:#AEB5B1; --ink-faint:#7E8582;
+    --accent:#4FC79A; --accent-ink:#0D1512; --accent-soft:#1E3730;
+    --danger:#E2694A; --danger-soft:#3A211B; --danger-ink:#1A0E0A;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4);
+    --shadow-2:0 16px 36px rgba(0,0,0,.5);
+    --brush-line: rgba(255,255,255,.04);
+    --grid-dot: rgba(255,255,255,.055);
+    color-scheme: dark;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--font-body);
+    font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{margin:0; text-wrap:balance;}
+  button,input,select,textarea{font-family:inherit; font-size:inherit; color:inherit;}
+  button{cursor:pointer;}
+  input,textarea,select{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--ink); padding:7px 9px;}
+  input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  ::selection{background:var(--accent-soft);}
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  }
+
+  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-faint);}
+
+  /* ---------- App shell ---------- */
+  .app{min-height:100%; display:flex; flex-direction:column;}
+
+  .topbar{
+    display:flex; align-items:center; gap:24px; flex-wrap:wrap;
+    padding:16px 24px; border-bottom:1px solid var(--border);
+    background:var(--surface);
+  }
+  .brand{display:flex; flex-direction:column; gap:2px; margin-right:auto;}
+  .brand-mark{
+    font-family:var(--font-display); font-weight:800; font-size:26px; letter-spacing:.01em;
+    text-transform:uppercase; line-height:1; color:var(--ink);
+  }
+  .brand-mark span{color:var(--accent);}
+  .section-tabs{display:flex; gap:6px; background:var(--surface-2); padding:4px; border-radius:var(--radius-md); border:1px solid var(--border);}
+  .section-tab{
+    appearance:none; border:none; background:transparent; color:var(--ink-soft);
+    font-family:var(--font-mono); font-weight:600; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:9px 18px; border-radius:calc(var(--radius-md) - 2px); transition:background .15s,color .15s;
+  }
+  .section-tab[aria-selected="true"]{background:var(--accent); color:var(--accent-ink);}
+  .section-tab:not([aria-selected="true"]):hover{background:var(--metal-cell); color:var(--ink);}
+  .topbar-meta{display:flex; align-items:center; gap:14px;}
+  .save-status{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); letter-spacing:.03em; display:flex; align-items:center; gap:6px;}
+  .save-status .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);}
+  .save-status.dirty .dot{background:var(--accent);}
+
+  .workspace{display:flex; flex-direction:column;}
+  .stage{
+    min-width:0; display:flex; flex-direction:column; padding:20px 24px 28px;
+    background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+    background-size: 22px 22px; background-position: -3px -3px;
+  }
+  .inspector{
+    flex:none; border-top:1px solid var(--border); background:var(--surface);
+    padding:18px 24px; position:sticky; bottom:0;
+  }
+
+  .stage-toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+  .bay-tabs{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .bay-tab{
+    display:flex; align-items:center; gap:8px; padding:6px 6px 6px 14px; border-radius:999px;
+    border:1px solid var(--border); background:var(--surface); color:var(--ink-soft);
+    font-size:13px; font-weight:500;
+  }
+  .bay-tab[aria-selected="true"]{border-color:var(--accent); color:var(--ink); background:var(--accent-soft);}
+  .bay-tab .bay-tab-name{background:none;border:none;padding:2px 0;color:inherit;font:inherit;cursor:pointer;}
+  .bay-tab .bay-tab-name:hover{text-decoration:underline;}
+  .bay-tab-size{
+    font-family:var(--font-mono); font-size:9.5px; letter-spacing:.04em; color:var(--ink-faint);
+    padding:1px 6px; border:1px solid var(--border); border-radius:999px; white-space:nowrap;
+  }
+  .bay-tab .icon-btn{width:22px;height:22px;}
+  .icon-btn{
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
+    border-radius:50%; border:1px solid transparent; background:transparent; color:var(--ink-faint);
+  }
+  .icon-btn:hover{background:var(--metal-cell); color:var(--ink);}
+  #themeToggleBtn{font-size:14px;}
+
+  .segmented{display:flex; gap:4px; background:var(--surface-2); padding:3px; border-radius:var(--radius-sm); border:1px solid var(--border);}
+  .seg-btn{
+    appearance:none; border:none; background:transparent; color:var(--ink-soft);
+    font-family:var(--font-mono); font-weight:600; font-size:11px; letter-spacing:.03em; text-transform:uppercase;
+    padding:7px 10px; border-radius:3px; transition:background .15s, color .15s; white-space:nowrap;
+  }
+  .seg-btn.is-active{background:var(--accent); color:var(--accent-ink);}
+  .seg-btn:not(.is-active):hover{background:var(--metal-cell); color:var(--ink);}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:var(--radius-sm);
+    border:1px solid var(--border); background:var(--surface); color:var(--ink); font-weight:600; font-size:13px;
+    transition:background .15s, border-color .15s;
+    white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--border-strong); background:var(--metal-cell);}
+  .btn-primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .btn-primary:hover{filter:brightness(1.06); background:var(--accent);}
+  .btn-danger{color:var(--danger); border-color:var(--danger);}
+  .btn-danger:hover{background:var(--danger-soft);}
+  .btn-ghost{border-color:transparent; background:transparent;}
+  .btn-ghost:hover{background:var(--metal-cell);}
+  .btn-sm{padding:6px 10px; font-size:12px;}
+  .btn[disabled]{opacity:.45; cursor:not-allowed;}
+
+  .toolbar-spacer{flex:1;}
+  .menu-wrap{position:relative;}
+  .menu{
+    position:absolute; top:calc(100% + 6px); right:0; min-width:190px; background:var(--surface);
+    border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-2); padding:6px; z-index:40;
+  }
+  .menu button{
+    display:flex; width:100%; text-align:left; padding:8px 10px; border-radius:var(--radius-sm);
+    background:transparent; border:none; color:var(--ink); font-size:13px; gap:8px; align-items:center;
+  }
+  .menu button:hover{background:var(--metal-cell);}
+  .menu-divider{height:1px; background:var(--border); margin:5px 2px;}
+  .menu-label{
+    font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);
+    padding:6px 10px 2px;
+  }
+  #exportMenu{min-width:220px;}
+
+  /* ---------- Rack panel ---------- */
+  .panel-scroll{overflow-x:auto; overflow-y:hidden; padding-bottom:6px; flex:none;}
+  .rack-panel{
+    position:relative; background:var(--metal);
+    background-image: repeating-linear-gradient(180deg, var(--brush-line) 0px, var(--brush-line) 1px, transparent 1px, transparent 3px);
+    border:1px solid var(--border-strong); border-radius:var(--radius-lg);
+    padding:20px 26px 22px; box-shadow:var(--shadow-1); min-width:max-content;
+  }
+  .rack-panel + .rack-panel{margin-top:28px;}
+  .screw{
+    position:absolute; width:11px; height:11px; border-radius:50%;
+    background:radial-gradient(circle at 32% 30%, var(--surface-2), var(--metal-2) 65%, var(--border-strong) 100%);
+    border:1px solid var(--border-strong);
+  }
+  .screw::after{content:""; position:absolute; left:2px; right:2px; top:50%; height:1px; background:var(--border-strong); transform:translateY(-50%) rotate(20deg);}
+  .screw.tl{top:9px; left:9px;} .screw.tr{top:9px; right:9px;} .screw.bl{bottom:9px; left:9px;} .screw.br{bottom:9px; right:9px;}
+
+  .panel-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin:0 4px 16px;}
+  .panel-title{font-family:var(--font-display); font-weight:700; font-size:22px; letter-spacing:.01em; text-transform:uppercase; color:var(--ink);}
+  .panel-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint);}
+
+  .trs-row{display:flex; align-items:center; gap:10px; margin:0 4px;}
+  .trs-row + .trs-row{margin-top:10px;}
+  .trs-row.trs-row--glyphs{margin-top:6px; margin-bottom:6px;}
+  .trs-row--glyphs + .trs-row{margin-top:6px;}
+  .trs-strip + .trs-strip{margin-top:24px;}
+  .row-tag{
+    flex:none; width:78px; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em;
+    color:var(--ink-faint); text-align:right; white-space:nowrap;
+  }
+  .port-row.glyph-row{height:16px; align-items:center;}
+  .glyph-cell{
+    display:flex; align-items:center; justify-content:center; height:100%; padding:0;
+    background:transparent; border:none; border-radius:3px; cursor:pointer;
+  }
+  .glyph-cell:hover{background:var(--metal-2);}
+  .glyph-cell:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+  .bridge{display:inline-block; width:2px; height:14px; background:var(--ink-soft); border-radius:1px;}
+  .bridge.half-normal{
+    background:linear-gradient(to bottom, var(--ink-soft) 0 5px, transparent 5px 9px, var(--ink-soft) 9px 14px);
+  }
+  .bridge.thru{
+    width:auto; height:auto; background:none;
+    font-family:var(--font-mono); font-size:11px; line-height:1; color:var(--ink-faint);
+  }
+  .port-row{display:grid; gap:8px;}
+  /* Chunk every 8 ports with a wider gap so a long row scans in groups,
+     like the physical block layout of real patchbay hardware. Real spacer
+     tracks (not margins) so every port cell keeps the same width. */
+  .port-row.xlr-row{grid-template-columns:repeat(8, 78px) 6px repeat(8, 78px); margin:0 4px;}
+  .port-row.trs-cols-24{grid-template-columns:repeat(8, 56px) 6px repeat(8, 56px) 6px repeat(8, 56px);}
+  .port-row.trs-cols-16{grid-template-columns:repeat(8, 64px) 6px repeat(8, 64px);}
+  .chunk-gap{width:6px;}
+
+  .port{
+    position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:3px; height:78px; padding:6px 4px; background:var(--metal-cell); color:var(--ink);
+    border:1.5px solid var(--border-strong); border-radius:var(--radius-sm);
+    transition:box-shadow .12s, transform .06s, background .12s;
+  }
+  .port:hover{background:var(--surface);}
+  .port:active{transform:translateY(1px);}
+  .port .idx{position:absolute; top:4px; left:5px; font-family:var(--font-mono); font-size:9.5px; color:var(--ink-faint);}
+  .port .lbl{font-size:11.5px; font-weight:500; line-height:1.2; text-align:center; max-width:100%; overflow-wrap:anywhere; max-height:2.6em; overflow:hidden;}
+  .port .lbl.placeholder{color:var(--ink-faint); font-style:italic; font-weight:400;}
+  .port .note-dot{position:absolute; bottom:5px; right:6px; width:5px; height:5px; border-radius:50%; background:var(--accent);}
+  .port.is-selected{box-shadow:0 0 0 3px var(--ink); background:var(--surface);}
+  .port.is-selected.is-anchor{box-shadow:0 0 0 3px var(--ink), 0 0 0 5px var(--ink-soft);}
+
+  /* ---------- Rack elevation (gear layout) ---------- */
+  .rack-toolbar{display:flex; align-items:center; gap:12px; margin:0 4px 14px;}
+  .rack-free{font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);}
+  .rack-elevation-wrap{display:flex; gap:0; align-items:flex-start;}
+  .rack-rail{flex:none; width:26px;}
+  .rack-rail .ru-num{display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:9px; color:var(--ink-faint); box-sizing:border-box;}
+  .rack-elevation{
+    position:relative; width:640px; max-width:100%; flex:none;
+    background-color:var(--metal-cell);
+    background-image: repeating-linear-gradient(180deg, var(--border) 0, var(--border) 1px, transparent 1px, transparent var(--ru));
+    border:1px solid var(--border-strong); border-radius:var(--radius-sm); overflow:hidden;
+  }
+  .gear-piece{
+    position:absolute; display:flex; flex-direction:column; justify-content:center; text-align:left;
+    background:var(--surface); border:1.5px solid var(--border-strong); border-radius:var(--radius-sm);
+    padding:6px 10px; overflow:hidden; appearance:none;
+  }
+  .gear-piece:hover{background:var(--metal-cell);}
+  .gear-piece.is-selected{box-shadow:0 0 0 3px var(--ink);}
+  .gear-piece .gear-name{
+    font-size:12.5px; font-weight:600; line-height:1.25; overflow:hidden;
+    display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical;
+  }
+  .gear-piece .gear-name.placeholder{color:var(--ink-faint); font-style:italic; font-weight:400;}
+  .gear-piece .gear-notes{font-size:10.5px; color:var(--ink-faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gear-piece .gear-u{position:absolute; top:4px; right:6px; font-family:var(--font-mono); font-size:9px; color:var(--ink-faint);}
+  .gear-piece .note-dot{position:absolute; bottom:5px; right:6px; width:5px; height:5px; border-radius:50%; background:var(--accent);}
+
+  /* ---------- Inspector (horizontal bar below the panel) ---------- */
+  .insp-empty{color:var(--ink-faint); font-size:13px; margin:0; padding:6px 0;}
+  .insp-bar{display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap;}
+  .insp-id{min-width:100px;}
+  .insp-id-row{display:flex; align-items:center; gap:6px;}
+  .insp-id-row h2{font-family:var(--font-display); font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.01em; white-space:nowrap;}
+  .insp-nav{display:flex; gap:4px;}
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field-grow{flex:1 1 200px;}
+  .field label{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);}
+  .field input[type="text"],.field textarea,.field select{width:100%;}
+  .group-picker{display:flex; align-items:center; gap:8px;}
+  .swatch{width:16px; height:16px; border-radius:4px; flex:none; border:1px solid rgba(0,0,0,.15);}
+  .bulk-count{font-family:var(--font-mono); font-size:12px; color:var(--ink-faint); margin:0;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .stack{display:flex; flex-direction:column; gap:8px;}
+  .row{display:flex; gap:8px;}
+  .row > *{flex:1;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,12,11,.5); display:flex; align-items:center; justify-content:center;
+    padding:24px; z-index:100;
+  }
+  .modal{
+    background:var(--surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-2);
+    width:min(560px,100%); max-height:min(640px,90vh); display:flex; flex-direction:column; border:1px solid var(--border);
+  }
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid var(--border);}
+  .modal-head h2{font-family:var(--font-display); font-weight:700; font-size:19px; text-transform:uppercase;}
+  .modal-body{padding:18px 20px; overflow-y:auto;}
+  .group-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border);}
+  .group-row:last-child{border-bottom:none;}
+  .group-row input[type="text"]{flex:1; background:transparent; border:1px solid transparent; padding:5px 6px;}
+  .group-row input[type="text"]:hover,.group-row input[type="text"]:focus{background:var(--surface-2); border-color:var(--border);}
+  .group-usage{font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); flex:none;}
+  .palette{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;}
+  .palette button{width:24px; height:24px; border-radius:6px; border:2px solid transparent;}
+  .palette button.is-active{border-color:var(--ink);}
+  .new-group-form{margin-top:14px; padding-top:14px; border-top:1px solid var(--border);}
+
+  /* ---------- Toast / banner ---------- */
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--ink); color:var(--bg);
+    padding:10px 16px; border-radius:var(--radius-md); font-size:13px; box-shadow:var(--shadow-2); z-index:200;
+    max-width:min(480px,86vw);
+  }
+  :root:not([data-theme="light"]) .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);}
+  :root[data-theme="dark"] .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);}
+  .toast.error{background:var(--danger); color:var(--danger-ink);}
+
+  .banner{
+    display:flex; align-items:center; gap:12px; background:var(--accent-soft); border:1px solid var(--accent);
+    color:var(--ink); padding:10px 14px; border-radius:var(--radius-md); margin-bottom:16px; font-size:13px;
+  }
+  .banner .toolbar-spacer{flex:1;}
+
+  .confirm-inline{display:flex; align-items:center; gap:6px;}
+  .confirm-inline span{font-size:12px; color:var(--ink-soft);}
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="eyebrow">Carter's Studio Tools</span>
+      <span class="brand-mark">Patch<span>·</span>Configurator v2</span>
+    </div>
+    <div class="section-tabs" id="sectionTabs" role="tablist" aria-label="Patchbay type"></div>
+    <div class="topbar-meta">
+      <span class="save-status" id="saveStatus"><span class="dot"></span><span id="saveStatusText">Saved on this device</span></span>
+      <button class="icon-btn" id="themeToggleBtn" type="button"></button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <main class="stage" id="stage">
+      <div id="restoreBannerHost"></div>
+      <div class="stage-toolbar">
+        <div class="bay-tabs" id="bayTabs" role="tablist" aria-label="Bays"></div>
+        <div class="menu-wrap">
+          <button class="btn btn-sm" id="addBayBtn" type="button" aria-haspopup="true" aria-expanded="false">+ Add bay</button>
+          <div class="menu" id="addBayMenu" hidden role="menu"></div>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <div class="segmented" id="viewModeToggle" role="group" aria-label="View mode">
+          <button type="button" class="seg-btn" data-mode="compact">Compact</button>
+          <button type="button" class="seg-btn" data-mode="full">Full</button>
+        </div>
+        <button class="btn btn-sm" id="manageGroupsBtn" type="button">Device groups</button>
+        <div class="menu-wrap">
+          <button class="btn btn-sm" id="exportMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">Export ▾</button>
+          <div class="menu" id="exportMenu" hidden role="menu"></div>
+        </div>
+        <div class="menu-wrap">
+          <button class="btn btn-sm" id="importMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">Import ▾</button>
+          <div class="menu" id="importMenu" hidden role="menu"></div>
+        </div>
+      </div>
+      <div class="panel-scroll">
+        <div id="rackPanel"></div>
+      </div>
+    </main>
+    <aside class="inspector" id="inspector" aria-label="Port editor">
+      <div id="inspectorBody"></div>
+    </aside>
+  </div>
+</div>
+
+<div id="modalHost"></div>
+<div id="toastHost"></div>
+<input type="file" id="fileInputJson" accept="application/json,.json" class="visually-hidden" />
+<input type="file" id="fileInputCsv" accept="text/csv,.csv" class="visually-hidden" />
+
+<script>
+"use strict";
+/* =========================================================================
+   PATCH SHEET — XLR & TRS patchbay labeling
+   Single-file artifact. No build step, no external JS.
+   ========================================================================= */
+
+/* ---------- constants ---------- */
+var GROUP_PALETTE = [
+  {name:"Crimson", hex:"#D64550"},
+  {name:"Amber",   hex:"#DE8A3C"},
+  {name:"Gold",    hex:"#D2B23A"},
+  {name:"Teal",    hex:"#2FA6A0"},
+  {name:"Sky",     hex:"#3E8FD0"},
+  {name:"Indigo",  hex:"#5B6FD6"},
+  {name:"Violet",  hex:"#8C5FD6"},
+  {name:"Orchid",  hex:"#C15FC0"},
+  {name:"Rose",    hex:"#D6608F"},
+  {name:"Rust",    hex:"#A9673A"},
+  {name:"Navy",    hex:"#2E4C8C"},
+  {name:"Copper",  hex:"#C77B4B"}
+];
+var LOCAL_KEY = "patchsheet.draft.v1";
+var THEME_KEY = "patchsheet.theme.v1";
+var VIEWMODE_KEY = "patchsheet.viewmode.v1";
+
+/* ---------- theme toggle ---------- */
+function getEffectiveTheme(){
+  var explicit = document.documentElement.getAttribute("data-theme");
+  if(explicit === "light" || explicit === "dark") return explicit;
+  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+}
+function updateThemeBtn(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(!btn) return;
+  var eff = getEffectiveTheme();
+  btn.textContent = eff === "dark" ? "☾" : "☀";
+  var next = eff === "dark" ? "light" : "dark";
+  btn.title = "Switch to " + next + " mode";
+  btn.setAttribute("aria-label", "Switch to " + next + " mode");
+}
+function applyTheme(explicit){
+  if(explicit === "light" || explicit === "dark"){
+    document.documentElement.setAttribute("data-theme", explicit);
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  updateThemeBtn();
+}
+function initTheme(){
+  var stored = null;
+  try{ stored = localStorage.getItem(THEME_KEY); }catch(e){ /* ignore */ }
+  applyTheme(stored === "light" || stored === "dark" ? stored : null);
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    btn.addEventListener("click", function(){
+      var next = getEffectiveTheme() === "dark" ? "light" : "dark";
+      applyTheme(next);
+      try{ localStorage.setItem(THEME_KEY, next); }catch(e){ /* ignore */ }
+    });
+  }
+}
+
+/* ---------- view mode (compact / full) ---------- */
+function updateViewModeToggle(){
+  var host = document.getElementById("viewModeToggle");
+  if(!host) return;
+  Array.prototype.forEach.call(host.querySelectorAll(".seg-btn"), function(btn){
+    btn.classList.toggle("is-active", btn.getAttribute("data-mode") === ui.viewMode);
+  });
+}
+function setViewMode(mode){
+  if(mode !== "compact" && mode !== "full") return;
+  ui.viewMode = mode;
+  try{ localStorage.setItem(VIEWMODE_KEY, mode); }catch(e){ /* ignore */ }
+  updateViewModeToggle();
+  renderGrid();
+}
+function initViewMode(){
+  var stored = null;
+  try{ stored = localStorage.getItem(VIEWMODE_KEY); }catch(e){ /* ignore */ }
+  ui.viewMode = (stored === "full") ? "full" : "compact";
+  updateViewModeToggle();
+  var host = document.getElementById("viewModeToggle");
+  if(host){
+    host.addEventListener("click", function(e){
+      var btn = e.target.closest(".seg-btn"); if(!btn) return;
+      setViewMode(btn.getAttribute("data-mode"));
+    });
+  }
+}
+var CSV_COLUMNS = ["bay_id","bay_name","bay_type","row","index","port_id","label","notes","group","routing","gear_height_u","gear_width"];
+
+/* ---------- tiny utils ---------- */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function debounce(fn, wait){
+  var t = null;
+  return function(){
+    var args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(function(){ fn.apply(ctx, args); }, wait);
+  };
+}
+function slug(s){
+  return String(s || "bay").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "bay";
+}
+function escapeHtml(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+/* ---------- data model ---------- */
+var TRS_SIZES = [48, 64];
+function normalizeTrsSize(size){ return size === 64 ? 64 : 48; }
+function makePorts(bayId, type, size){
+  var ports = [];
+  if(type === "xlr"){
+    for(var i=1;i<=16;i++){
+      ports.push({id:bayId+"-x-"+i, row:null, index:i, label:"", notes:"", groupId:null});
+    }
+  } else {
+    var perRow = normalizeTrsSize(size) / 2;
+    ["top","bottom"].forEach(function(row){
+      for(var i=1;i<=perRow;i++){
+        ports.push({id:bayId+"-"+row+"-"+i, row:row, index:i, label:"", notes:"", groupId:null});
+      }
+    });
+  }
+  return ports;
+}
+var ROUTING_STATES = ["normal","half-normal","thru"];
+var ROUTING_LABELS = {normal:"Normal", "half-normal":"Half-Normal", thru:"Thru"};
+function makeColumns(size){
+  var n = normalizeTrsSize(size) / 2;
+  var out = [];
+  for(var i=1;i<=n;i++){ out.push({index:i, state:"normal"}); }
+  return out;
+}
+function getColumn(bay, index){
+  if(!bay || !bay.columns) return null;
+  for(var i=0;i<bay.columns.length;i++){ if(bay.columns[i].index === index) return bay.columns[i]; }
+  return null;
+}
+function setColumnState(bay, index, state){
+  var col = getColumn(bay, index);
+  if(col && ROUTING_STATES.indexOf(state) !== -1) col.state = state;
+}
+/* ---------- rack (gear) data model ---------- */
+var GEAR_HEIGHTS = [1,2,3,4];
+function clampRackHeight(h){
+  h = Math.round(Number(h));
+  if(!isFinite(h) || h < 1) h = 1;
+  if(h > 24) h = 24;
+  return h;
+}
+function clampGearHeight(h){
+  h = Math.round(Number(h));
+  return GEAR_HEIGHTS.indexOf(h) !== -1 ? h : 1;
+}
+function makeGear(name, notes, heightU, width){
+  return {
+    id: "gear-"+uid(),
+    name: String(name||"").slice(0,60),
+    notes: String(notes||""),
+    heightU: clampGearHeight(heightU),
+    width: width === "half" ? "half" : "full"
+  };
+}
+function indexOfGear(rack, gearId){
+  for(var i=0;i<rack.gear.length;i++){ if(rack.gear[i].id===gearId) return i; }
+  return -1;
+}
+// Derives each gear piece's vertical slot (topU) and, for half-width pieces,
+// which side of the row they occupy — purely from array order, so nothing
+// needs to be stored and DOM rendering / canvas export always agree. Two
+// half-width pieces pair into one row only when they're placed back-to-back
+// with matching heights; anything else leaves an open half-slot (which
+// still reserves that row's full height) that a later matching piece can
+// fill in.
+function layoutRackGear(rack){
+  var cursor = 0, openRow = null, items = [];
+  (rack.gear || []).forEach(function(g){
+    if(g.width === "half"){
+      if(openRow && openRow.heightU === g.heightU){
+        items.push({gear:g, topU:openRow.topU, side:"right"});
+        cursor = openRow.topU + openRow.heightU;
+        openRow = null;
+      } else {
+        if(openRow){ cursor = openRow.topU + openRow.heightU; openRow = null; }
+        items.push({gear:g, topU:cursor, side:"left"});
+        openRow = {heightU:g.heightU, topU:cursor};
+      }
+    } else {
+      if(openRow){ cursor = openRow.topU + openRow.heightU; openRow = null; }
+      items.push({gear:g, topU:cursor, side:"full"});
+      cursor += g.heightU;
+    }
+  });
+  if(openRow){ cursor = openRow.topU + openRow.heightU; openRow = null; }
+  return {items:items, usedU:cursor};
+}
+function rackFreeU(rack){ return Math.max(0, rack.heightU - layoutRackGear(rack).usedU); }
+// Whether a new piece would fit, accounting for an already-open half-slot
+// (from the most recently added half-width piece) that a matching-height
+// half-width piece can pair into for free.
+function gearFitsInRack(rack, heightU, width){
+  var layout = layoutRackGear(rack);
+  var tail = layout.items[layout.items.length-1];
+  if(width === "half" && tail && tail.side === "left" && tail.gear.heightU === heightU) return true;
+  return (layout.usedU + heightU) <= rack.heightU;
+}
+function addGearToRack(rackId, name, notes, heightU, width){
+  var rack = getBay(rackId);
+  if(!rack || rack.type !== "rack") return null;
+  var h = clampGearHeight(heightU);
+  var w = width === "half" ? "half" : "full";
+  if(!gearFitsInRack(rack, h, w)){
+    showToast("Doesn't fit — only " + rackFreeU(rack) + "U free in this rack.", "error");
+    return null;
+  }
+  var g = makeGear(name, notes, h, w);
+  rack.gear.push(g);
+  markDirty();
+  return g;
+}
+function deleteGear(rackId, gearId){
+  var rack = getBay(rackId);
+  if(!rack) return;
+  rack.gear = rack.gear.filter(function(g){ return g.id !== gearId; });
+  if(ui.selection.indexOf(gearId) !== -1) clearSelectionSilently();
+  markDirty();
+  renderAll();
+}
+function moveGear(rackId, gearId, dir){
+  var rack = getBay(rackId);
+  if(!rack) return;
+  var idx = indexOfGear(rack, gearId);
+  if(idx === -1) return;
+  var newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= rack.gear.length) return;
+  var tmp = rack.gear[idx]; rack.gear[idx] = rack.gear[newIdx]; rack.gear[newIdx] = tmp;
+  markDirty();
+  renderGrid(); renderInspector();
+}
+function makeBay(type, name, size){
+  var id = type + "-" + uid();
+  var baySize = type === "trs" ? normalizeTrsSize(size) : null;
+  var bay = {id:id, type:type, name:name, size: baySize};
+  if(type === "rack"){
+    bay.heightU = clampRackHeight(size);
+    bay.gear = [];
+  } else {
+    bay.ports = makePorts(id, type, baySize);
+    if(type === "trs") bay.columns = makeColumns(baySize);
+  }
+  return bay;
+}
+function createDefaultState(){
+  return {
+    version: 1,
+    bays: [ makeBay("xlr","XLR Bay 1"), makeBay("trs","TRS 48pt Bay 1", 48) ],
+    groups: []
+  };
+}
+function normalizeState(raw){
+  var base = createDefaultState();
+  if(!raw || typeof raw !== "object" || !Array.isArray(raw.bays)) return base;
+  var groups = Array.isArray(raw.groups) ? raw.groups.filter(function(g){return g && g.id && g.name;}).map(function(g){
+    return {id:String(g.id), name:String(g.name), color:String(g.color||"#888888")};
+  }) : [];
+  var groupIds = {}; groups.forEach(function(g){ groupIds[g.id] = true; });
+  var bays = raw.bays.filter(function(b){ return b && (b.type==="xlr"||b.type==="trs"||b.type==="rack"); }).map(function(b){
+    if(b.type === "rack"){
+      var gearList = Array.isArray(b.gear) ? b.gear.map(function(g){
+        return {
+          id: (g && g.id) ? String(g.id) : ("gear-"+uid()),
+          name: (g && typeof g.name === "string") ? g.name.slice(0,60) : "",
+          notes: (g && typeof g.notes === "string") ? g.notes : "",
+          heightU: clampGearHeight(g && g.heightU),
+          width: (g && g.width === "half") ? "half" : "full"
+        };
+      }) : [];
+      return {id: b.id || ("rack-"+uid()), type:"rack", name: String(b.name || "Rack"), size:null, heightU: clampRackHeight(b.heightU), gear: gearList};
+    }
+    var size = b.type === "trs" ? normalizeTrsSize(b.size) : null;
+    var expected = makePorts(b.id || (b.type+"-"+uid()), b.type, size);
+    var byId = {};
+    (Array.isArray(b.ports)?b.ports:[]).forEach(function(p){ if(p && p.id) byId[p.id] = p; });
+    var ports = expected.map(function(ep){
+      var p = byId[ep.id];
+      if(!p) return ep;
+      return {
+        id: ep.id, row: ep.row, index: ep.index,
+        label: typeof p.label === "string" ? p.label : "",
+        notes: typeof p.notes === "string" ? p.notes : "",
+        groupId: (p.groupId && groupIds[p.groupId]) ? p.groupId : null
+      };
+    });
+    var out = {id: b.id || (b.type+"-"+uid()), type:b.type, name: String(b.name || (b.type.toUpperCase()+" Bay")), size: size, ports: ports};
+    if(b.type === "trs"){
+      var expectedCols = makeColumns(size);
+      var colByIndex = {};
+      (Array.isArray(b.columns) ? b.columns : []).forEach(function(c){
+        if(c && typeof c.index === "number") colByIndex[c.index] = c;
+      });
+      out.columns = expectedCols.map(function(ec){
+        var c = colByIndex[ec.index];
+        var state = (c && ROUTING_STATES.indexOf(c.state) !== -1) ? c.state : "normal";
+        return {index: ec.index, state: state};
+      });
+    }
+    return out;
+  });
+  if(bays.length === 0) return base;
+  return {version:1, bays:bays, groups:groups};
+}
+
+var state = createDefaultState();
+var ui = {
+  section: "xlr",
+  activeBay: {},        // type -> bayId
+  selection: [],         // array of port ids (or a single gear id), in click order for range calc
+  anchor: null,
+  groupsModalOpen: false,
+  addRackModalOpen: false,
+  addGearModalOpen: false,
+  addGearRackId: null,
+  exportMenuOpen: false,
+  importMenuOpen: false,
+  viewMode: "compact"    // "compact" (one bay) or "full" (every bay in the current section)
+};
+
+/* ---------- persistence (local draft, best-effort) ---------- */
+function saveLocalDraft(){
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(state)); }catch(e){ /* ignore */ }
+}
+var scheduleLocalSave = debounce(function(){
+  saveLocalDraft();
+  setSaveStatus(false);
+}, 500);
+function markDirty(){
+  setSaveStatus(true);
+  scheduleLocalSave();
+}
+function setSaveStatus(dirty){
+  var el = document.getElementById("saveStatus");
+  var txt = document.getElementById("saveStatusText");
+  if(!el) return;
+  el.classList.toggle("dirty", dirty);
+  txt.textContent = dirty ? "Saving to this device…" : "Saved on this device";
+}
+function loadLocalDraft(){
+  try{
+    var raw = localStorage.getItem(LOCAL_KEY);
+    if(!raw) return null;
+    var parsed = JSON.parse(raw);
+    if(!parsed || !Array.isArray(parsed.bays)) return null;
+    return parsed;
+  }catch(e){ return null; }
+}
+
+/* ---------- downloads capability (safe wrapper) ---------- */
+var _downloadsPromise = null;
+function getDownloads(){
+  if(!_downloadsPromise){
+    _downloadsPromise = (window.claude && typeof window.claude.use === "function")
+      ? window.claude.use("downloads").catch(function(){ return null; })
+      : Promise.resolve(null);
+  }
+  return _downloadsPromise;
+}
+function mimeForFilename(filename){
+  var ext = String(filename).split(".").pop().toLowerCase();
+  return {
+    png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+    json: "application/json", csv: "text/csv", txt: "text/plain"
+  }[ext] || "application/octet-stream";
+}
+function classicDownload(filename, data){
+  // Fallback for contexts with no downloads capability (e.g. this file hosted
+  // outside claude.ai, such as on GitHub Pages, or opened directly as a file).
+  try{
+    var blob = (data instanceof Blob) ? data : new Blob([data], {type: mimeForFilename(filename)});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    showToast("Saved " + filename, "success");
+    return true;
+  } catch(e){
+    showToast("Couldn't save the file.", "error");
+    return false;
+  }
+}
+function saveFile(filename, data){
+  return getDownloads().then(function(dl){
+    if(!dl){ return classicDownload(filename, data); }
+    return dl.save({filename: filename, data: data}).then(function(){
+      showToast("Saved " + filename, "success");
+      return true;
+    }).catch(function(err){
+      var code = err && err.code;
+      if(code === "declined") return false;
+      if(code === "extension_not_enabled" && /\.csv$/i.test(filename)){
+        var fallback = filename.replace(/\.csv$/i, ".txt");
+        return dl.save({filename: fallback, data: data}).then(function(){
+          showToast("CSV isn't enabled in this view — saved " + fallback + " instead. Rename the extension to .csv to open it in a spreadsheet.", "info");
+          return true;
+        }).catch(function(){
+          showToast("Couldn't save the file.", "error");
+          return false;
+        });
+      }
+      showToast("Couldn't save the file" + (err && err.message ? ": " + err.message : "."), "error");
+      return false;
+    });
+  });
+}
+
+/* ---------- toast ---------- */
+var toastTimer = null;
+function showToast(msg, kind){
+  var host = document.getElementById("toastHost");
+  host.innerHTML = '<div class="toast' + (kind==="error"?" error":"") + '" role="status">' + escapeHtml(msg) + '</div>';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ host.innerHTML = ""; }, 4200);
+}
+
+/* ---------- bay helpers ---------- */
+function baysOfType(type){ return state.bays.filter(function(b){ return b.type === type; }); }
+function getBay(id){ return state.bays.filter(function(b){ return b.id === id; })[0] || null; }
+function ensureActiveBay(type){
+  var list = baysOfType(type);
+  var cur = ui.activeBay[type];
+  if(cur && list.some(function(b){return b.id===cur;})) return cur;
+  ui.activeBay[type] = list.length ? list[0].id : null;
+  return ui.activeBay[type];
+}
+function getActiveBay(){
+  var id = ensureActiveBay(ui.section);
+  return id ? getBay(id) : null;
+}
+function nextBayName(type, size){
+  var label = type === "xlr" ? "XLR Bay " : type === "trs" ? ("TRS " + normalizeTrsSize(size) + "pt Bay ") : "Rack ";
+  var sameKind = type === "xlr" ? baysOfType("xlr")
+    : type === "trs" ? baysOfType("trs").filter(function(b){ return normalizeTrsSize(b.size) === normalizeTrsSize(size); })
+    : baysOfType("rack");
+  var n = sameKind.length + 1;
+  var name = label + n;
+  while(state.bays.some(function(b){return b.name===name;})){ n++; name = label + n; }
+  return name;
+}
+function addBay(type, size){
+  var baySize = type === "trs" ? normalizeTrsSize(size) : type === "rack" ? clampRackHeight(size) : null;
+  var bay = makeBay(type, nextBayName(type, baySize), baySize);
+  state.bays.push(bay);
+  ui.activeBay[type] = bay.id;
+  clearSelection();
+  markDirty();
+  renderAll();
+}
+function renameBay(bayId, name){
+  var bay = getBay(bayId);
+  if(!bay) return;
+  bay.name = name.trim() || bay.name;
+  markDirty();
+  renderAll();
+}
+function deleteBay(bayId){
+  var bay = getBay(bayId);
+  if(!bay) return;
+  var type = bay.type;
+  state.bays = state.bays.filter(function(b){ return b.id !== bayId; });
+  if(ui.activeBay[type] === bayId) ui.activeBay[type] = null;
+  clearSelection();
+  markDirty();
+  renderAll();
+}
+
+/* ---------- group helpers ---------- */
+function getGroup(id){ return state.groups.filter(function(g){return g.id===id;})[0] || null; }
+function nextPaletteColor(){
+  var used = {};
+  state.groups.forEach(function(g){ used[g.color] = true; });
+  var free = GROUP_PALETTE.filter(function(c){ return !used[c.hex]; });
+  return (free[0] || GROUP_PALETTE[state.groups.length % GROUP_PALETTE.length]).hex;
+}
+function addGroup(name, color){
+  var g = {id:"grp-"+uid(), name:name.trim() || "Untitled group", color: color || nextPaletteColor()};
+  state.groups.push(g);
+  markDirty();
+  return g;
+}
+function renameGroup(id, name){
+  var g = getGroup(id); if(!g) return;
+  g.name = name.trim() || g.name;
+  markDirty(); renderAll();
+}
+function recolorGroup(id, color){
+  var g = getGroup(id); if(!g) return;
+  g.color = color;
+  markDirty(); renderAll();
+}
+function deleteGroup(id){
+  state.groups = state.groups.filter(function(g){ return g.id !== id; });
+  state.bays.forEach(function(b){ if(b.ports) b.ports.forEach(function(p){ if(p.groupId===id) p.groupId=null; }); });
+  markDirty(); renderAll();
+}
+function groupUsage(id){
+  var n = 0;
+  state.bays.forEach(function(b){ if(b.ports) b.ports.forEach(function(p){ if(p.groupId===id) n++; }); });
+  return n;
+}
+function groupsUsedInBay(bay){
+  var ids = {};
+  bay.ports.forEach(function(p){ if(p.groupId) ids[p.groupId] = true; });
+  return state.groups.filter(function(g){ return ids[g.id]; });
+}
+function groupsUsedAcrossBays(bays){
+  var ids = {};
+  bays.forEach(function(bay){ if(bay.ports) bay.ports.forEach(function(p){ if(p.groupId) ids[p.groupId] = true; }); });
+  return state.groups.filter(function(g){ return ids[g.id]; });
+}
+
+/* ---------- selection ---------- */
+function clearSelection(){ ui.selection = []; ui.anchor = null; renderInspector(); }
+function selectPort(bay, portId, mods){
+  var order = bay.ports.map(function(p){return p.id;});
+  var idx = order.indexOf(portId);
+  if(idx === -1) return;
+  if(mods.shift && ui.anchor && order.indexOf(ui.anchor) !== -1){
+    var a = order.indexOf(ui.anchor);
+    var lo = Math.min(a, idx), hi = Math.max(a, idx);
+    ui.selection = order.slice(lo, hi+1);
+  } else if(mods.ctrl){
+    var pos = ui.selection.indexOf(portId);
+    if(pos === -1){ ui.selection.push(portId); } else { ui.selection.splice(pos,1); }
+    ui.anchor = portId;
+  } else {
+    ui.selection = [portId];
+    ui.anchor = portId;
+  }
+  renderGrid();
+  renderInspector();
+}
+function selectedPorts(bay){
+  if(!bay) return [];
+  var set = {}; ui.selection.forEach(function(id){ set[id]=true; });
+  return bay.ports.filter(function(p){ return set[p.id]; });
+}
+function selectColumn(bay, colIndex){
+  var ids = bay.ports.filter(function(p){
+    return (p.row === "top" || p.row === "bottom") && p.index === colIndex;
+  }).map(function(p){ return p.id; });
+  if(!ids.length) return;
+  ui.selection = ids;
+  ui.anchor = ids[0];
+  renderGrid();
+  renderInspector();
+}
+
+/* ---------- rendering: tabs ---------- */
+var SECTION_TYPES = [
+  {type:"xlr", label:"XLR — 16pt"},
+  {type:"trs", label:"TRS"},
+  {type:"rack", label:"Rack"}
+];
+function renderSectionTabs(){
+  var host = document.getElementById("sectionTabs");
+  host.innerHTML = SECTION_TYPES.map(function(t){
+    var selected = ui.section === t.type;
+    return '<button class="section-tab" role="tab" aria-selected="'+selected+'" data-type="'+t.type+'">'+t.label+'</button>';
+  }).join("");
+  Array.prototype.forEach.call(host.querySelectorAll(".section-tab"), function(btn){
+    btn.addEventListener("click", function(){
+      ui.section = btn.getAttribute("data-type");
+      clearSelectionSilently();
+      renderAll();
+    });
+  });
+}
+function clearSelectionSilently(){ ui.selection = []; ui.anchor = null; }
+
+function renderBayTabs(){
+  var host = document.getElementById("bayTabs");
+  var list = baysOfType(ui.section);
+  ensureActiveBay(ui.section);
+  var activeId = ui.activeBay[ui.section];
+  host.innerHTML = list.map(function(b){
+    var selected = b.id === activeId;
+    return '<div class="bay-tab" role="tab" aria-selected="'+selected+'" data-bay="'+b.id+'">'+
+      '<button type="button" class="bay-tab-name" data-act="select" data-bay="'+b.id+'">'+escapeHtml(b.name)+'</button>'+
+      (b.type==="trs" ? '<span class="bay-tab-size">'+b.size+'pt</span>' : (b.type==="rack" ? '<span class="bay-tab-size">'+b.heightU+'U</span>' : '')) +
+      '<button type="button" class="icon-btn" data-act="rename" data-bay="'+b.id+'" title="Rename bay" aria-label="Rename '+escapeAttr(b.name)+'">✎</button>'+
+      '<button type="button" class="icon-btn" data-act="delete" data-bay="'+b.id+'" title="Delete bay" aria-label="Delete '+escapeAttr(b.name)+'">×</button>'+
+      '</div>';
+  }).join("");
+  Array.prototype.forEach.call(host.querySelectorAll('[data-act="select"]'), function(btn){
+    btn.addEventListener("click", function(){
+      var bayId = btn.getAttribute("data-bay");
+      ui.activeBay[ui.section] = bayId;
+      clearSelectionSilently();
+      renderAll();
+      var panel = document.getElementById("bayPanel-"+bayId);
+      if(panel) panel.scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  });
+  Array.prototype.forEach.call(host.querySelectorAll('[data-act="rename"]'), function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-bay");
+      var bay = getBay(id);
+      var wrap = btn.closest(".bay-tab");
+      wrap.innerHTML = '<input type="text" value="'+escapeAttr(bay.name)+'" style="width:120px" />';
+      var input = wrap.querySelector("input");
+      input.focus(); input.select();
+      function commit(){ renameBay(id, input.value); }
+      input.addEventListener("keydown", function(e){
+        if(e.key==="Enter"){ e.preventDefault(); commit(); }
+        else if(e.key==="Escape"){ renderAll(); }
+      });
+      input.addEventListener("blur", commit);
+    });
+  });
+  Array.prototype.forEach.call(host.querySelectorAll('[data-act="delete"]'), function(btn){
+    wireInlineConfirm(btn, function(){ deleteBay(btn.getAttribute("data-bay")); }, "Delete bay?");
+  });
+}
+
+function wireInlineConfirm(btn, onConfirm, label){
+  btn.addEventListener("click", function(){
+    if(btn.dataset.confirming === "1"){ return; }
+    btn.dataset.confirming = "1";
+    var wrap = document.createElement("span");
+    wrap.className = "confirm-inline";
+    wrap.innerHTML = '<span>'+escapeHtml(label)+'</span>' +
+      '<button type="button" class="btn btn-sm btn-danger" data-c="yes">Delete</button>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-c="no">Cancel</button>';
+    btn.replaceWith(wrap);
+    wrap.querySelector('[data-c="yes"]').addEventListener("click", onConfirm);
+    wrap.querySelector('[data-c="no"]').addEventListener("click", function(){ renderAll(); });
+  });
+}
+
+/* ---------- rendering: rack panel ---------- */
+function portCellHtml(bay, p, selectedSet){
+  var group = p.groupId ? getGroup(p.groupId) : null;
+  var cls = "port";
+  if(selectedSet[p.id]) cls += " is-selected";
+  if(ui.anchor === p.id) cls += " is-anchor";
+  var style = 'border-color:' + (group ? group.color : "var(--border-strong)") + ';' +
+              (group ? 'border-width:3px;' : '');
+  var label = p.label ? '<span class="lbl">'+escapeHtml(p.label)+'</span>' : '<span class="lbl placeholder">—</span>';
+  var note = p.notes ? '<span class="note-dot" aria-hidden="true"></span>' : '';
+  var title = (p.label || "Unlabeled") + (group ? " · " + group.name : "") + (p.notes ? " · " + p.notes : "");
+  return '<button type="button" class="'+cls+'" style="'+style+'" data-port="'+p.id+'" title="'+escapeAttr(title)+'">' +
+    '<span class="idx">'+ (p.row ? p.row.slice(0,1).toUpperCase()+p.index : p.index) +'</span>' +
+    label + note + '</button>';
+}
+// A TRS bay's logical TOP/BOTTOM rows are grouped into "strips" — each strip
+// is one top row directly stacked over its matching bottom row, so a column's
+// two jacks are always vertically adjacent (with a routing-state indicator
+// in between). A 48pt bay is one 24-wide strip; a 64pt bay is built from two
+// ganged 16-wide strips (1–16, 17–32), matching how the hardware is actually
+// wired and keeping cells from shrinking to fit 32 in a single row.
+function trsStrips(bay){
+  var top = bay.ports.filter(function(p){return p.row==="top";});
+  var bottom = bay.ports.filter(function(p){return p.row==="bottom";});
+  if(bay.size === 64){
+    return [
+      {topTag:"TOP 1–16", bottomTag:"BOTTOM 1–16", top: top.slice(0,16), bottom: bottom.slice(0,16), colStart:0},
+      {topTag:"TOP 17–32", bottomTag:"BOTTOM 17–32", top: top.slice(16,32), bottom: bottom.slice(16,32), colStart:16}
+    ];
+  }
+  return [{topTag:"TOP", bottomTag:"BOTTOM", top: top, bottom: bottom, colStart:0}];
+}
+// Flattened top/bottom row list in the same strip order, for the canvas
+// export layout math (which lays out rows independent of the glyph strip).
+function trsVisualRows(bay){
+  var strips = trsStrips(bay);
+  var rows = [];
+  strips.forEach(function(s, i){
+    rows.push({tag:s.topTag, ports:s.top, sectionEnd:false});
+    rows.push({tag:s.bottomTag, ports:s.bottom, sectionEnd: i < strips.length-1});
+  });
+  return rows;
+}
+function chunkedCellsHtml(count, cellFn){
+  var CHUNK = 8, out = "";
+  for(var i=0;i<count;i++){
+    out += cellFn(i);
+    if((i+1) % CHUNK === 0 && (i+1) !== count){
+      out += '<span class="chunk-gap" aria-hidden="true"></span>';
+    }
+  }
+  return out;
+}
+function portCellsHtml(bay, ports, set){
+  return chunkedCellsHtml(ports.length, function(i){ return portCellHtml(bay, ports[i], set); });
+}
+function routingGlyphHtml(state){
+  if(state === "half-normal") return '<span class="bridge half-normal" aria-hidden="true"></span>';
+  if(state === "thru") return '<span class="bridge thru" aria-hidden="true">×</span>';
+  return '<span class="bridge normal" aria-hidden="true"></span>';
+}
+function glyphCellHtml(bay, colIndex){
+  var col = getColumn(bay, colIndex);
+  var state = col ? col.state : "normal";
+  var label = ROUTING_LABELS[state] || "Normal";
+  return '<button type="button" class="glyph-cell" data-col="'+colIndex+'" ' +
+    'title="Column '+colIndex+' — '+label+'" aria-label="Column '+colIndex+' routing: '+label+'">' +
+    routingGlyphHtml(state) + '</button>';
+}
+function glyphCellsHtml(bay, strip){
+  return chunkedCellsHtml(strip.top.length, function(i){ return glyphCellHtml(bay, strip.colStart + i + 1); });
+}
+function bayPanelInnerHtml(bay){
+  if(bay.type === "rack") return rackPanelInnerHtml(bay);
+  var set = {}; ui.selection.forEach(function(id){ set[id]=true; });
+  var html = '<span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>';
+  var subtitle = bay.type==="xlr" ? "16 × XLR-F Passthrough" : (bay.size + "-Point TRS Bantam");
+  html += '<div class="panel-head"><span class="panel-title">'+escapeHtml(bay.name)+'</span>' +
+    '<span class="panel-sub">'+subtitle+'</span></div>';
+  if(bay.type === "xlr"){
+    html += '<div class="port-row xlr-row">' + portCellsHtml(bay,bay.ports,set) + '</div>';
+  } else {
+    trsStrips(bay).forEach(function(strip){
+      var colClass = "trs-cols-" + strip.top.length;
+      html += '<div class="trs-strip">';
+      html += '<div class="trs-row"><span class="row-tag">'+strip.topTag+'</span>' +
+        '<div class="port-row '+colClass+'">'+portCellsHtml(bay,strip.top,set)+'</div></div>';
+      html += '<div class="trs-row trs-row--glyphs"><span class="row-tag"></span>' +
+        '<div class="port-row '+colClass+' glyph-row">'+glyphCellsHtml(bay,strip)+'</div></div>';
+      html += '<div class="trs-row"><span class="row-tag">'+strip.bottomTag+'</span>' +
+        '<div class="port-row '+colClass+'">'+portCellsHtml(bay,strip.bottom,set)+'</div></div>';
+      html += '</div>';
+    });
+  }
+  return html;
+}
+/* ---------- rendering: rack elevation ---------- */
+var RACK_RU_PX = 40; // on-screen pixel height of one rack unit — must match the
+                      // --ru custom property set inline on .rack-elevation below.
+function gearCellHtml(item, selectedSet){
+  var g = item.gear;
+  var cls = "gear-piece";
+  if(selectedSet[g.id]) cls += " is-selected";
+  var top = item.topU * RACK_RU_PX;
+  var height = g.heightU * RACK_RU_PX;
+  var styleParts = ["top:"+(top+2)+"px", "height:"+(height-4)+"px"];
+  if(item.side === "left"){ styleParts.push("left:2px", "width:calc(50% - 3px)"); }
+  else if(item.side === "right"){ styleParts.push("right:2px", "width:calc(50% - 3px)"); }
+  else { styleParts.push("left:2px", "right:2px"); }
+  var nameHtml = g.name ? '<span class="gear-name">'+escapeHtml(g.name)+'</span>' : '<span class="gear-name placeholder">Unnamed</span>';
+  var note = g.notes ? '<span class="note-dot" aria-hidden="true"></span>' : '';
+  var title = (g.name || "Unnamed") + " · " + g.heightU + "U" + (g.width==="half"?" half-width":"") + (g.notes ? " · " + g.notes : "");
+  return '<button type="button" class="'+cls+'" style="'+styleParts.join(";")+'" data-gear="'+g.id+'" title="'+escapeAttr(title)+'">' +
+    '<span class="gear-u">'+g.heightU+'U</span>' + nameHtml + note + '</button>';
+}
+function rackPanelInnerHtml(bay){
+  var set = {}; ui.selection.forEach(function(id){ set[id]=true; });
+  var layout = layoutRackGear(bay);
+  var html = '<span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>';
+  html += '<div class="panel-head"><span class="panel-title">'+escapeHtml(bay.name)+'</span>' +
+    '<span class="panel-sub">'+bay.heightU+'U Rack Frame</span></div>';
+  html += '<div class="rack-toolbar"><button type="button" class="btn btn-sm" data-act="add-gear">+ Add gear</button>' +
+    '<span class="rack-free">'+rackFreeU(bay)+'U free</span></div>';
+  var rail = "";
+  for(var i=1;i<=bay.heightU;i++){ rail += '<div class="ru-num" style="height:'+RACK_RU_PX+'px">'+i+'</div>'; }
+  var gearHtml = layout.items.map(function(item){ return gearCellHtml(item, set); }).join("");
+  html += '<div class="rack-elevation-wrap">' +
+    '<div class="rack-rail">'+rail+'</div>' +
+    '<div class="rack-elevation" style="height:'+(bay.heightU*RACK_RU_PX)+'px; --ru:'+RACK_RU_PX+'px;">'+gearHtml+'</div>' +
+    '</div>';
+  return html;
+}
+// In Full view, several bays render at once — a click in any of them makes
+// that bay "active" (and drops any stale selection from whichever bay was
+// active before) so the Inspector and bay tabs stay pointed at the bay you
+// actually clicked in.
+function ensureBayActive(bay){
+  if(ui.activeBay[bay.type] !== bay.id){
+    ui.activeBay[bay.type] = bay.id;
+    ui.selection = []; ui.anchor = null;
+    renderBayTabs();
+  }
+}
+function selectGear(bay, gearId){
+  ui.selection = [gearId];
+  ui.anchor = gearId;
+  renderGrid();
+  renderInspector();
+}
+function selectedGear(bay){
+  if(!bay || bay.type !== "rack") return [];
+  var set = {}; ui.selection.forEach(function(id){ set[id]=true; });
+  return bay.gear.filter(function(g){ return set[g.id]; });
+}
+function wireBayPanelEvents(container, bay){
+  if(bay.type === "rack"){
+    Array.prototype.forEach.call(container.querySelectorAll(".gear-piece"), function(btn){
+      btn.addEventListener("click", function(){
+        ensureBayActive(bay);
+        selectGear(bay, btn.getAttribute("data-gear"));
+      });
+    });
+    var addBtn = container.querySelector('[data-act="add-gear"]');
+    if(addBtn){
+      addBtn.addEventListener("click", function(){
+        ensureBayActive(bay);
+        openAddGearModal(bay.id);
+      });
+    }
+    return;
+  }
+  Array.prototype.forEach.call(container.querySelectorAll(".port"), function(btn){
+    btn.addEventListener("click", function(e){
+      ensureBayActive(bay);
+      selectPort(bay, btn.getAttribute("data-port"), {shift:e.shiftKey, ctrl:e.ctrlKey||e.metaKey});
+    });
+  });
+  Array.prototype.forEach.call(container.querySelectorAll(".glyph-cell"), function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      ensureBayActive(bay);
+      selectColumn(bay, Number(btn.getAttribute("data-col")));
+    });
+  });
+}
+function renderGrid(){
+  var host = document.getElementById("rackPanel");
+  if(ui.viewMode === "full") { renderGridFull(host); } else { renderGridCompact(host); }
+}
+function emptySectionHtml(){
+  var noun = ui.section === "rack" ? "racks" : "bays";
+  return '<div class="insp-empty" style="padding:24px;">No '+noun+' yet — add one to get started.</div>';
+}
+function renderGridCompact(host){
+  var bay = getActiveBay();
+  if(!bay){
+    host.innerHTML = emptySectionHtml();
+    return;
+  }
+  host.innerHTML = '<div class="rack-panel">' + bayPanelInnerHtml(bay) + '</div>';
+  wireBayPanelEvents(host, bay);
+}
+function renderGridFull(host){
+  var list = baysOfType(ui.section);
+  if(!list.length){
+    host.innerHTML = emptySectionHtml();
+    return;
+  }
+  host.innerHTML = list.map(function(bay){
+    return '<div class="rack-panel" id="bayPanel-'+bay.id+'" data-bay-id="'+bay.id+'">' + bayPanelInnerHtml(bay) + '</div>';
+  }).join("");
+  list.forEach(function(bay){
+    wireBayPanelEvents(document.getElementById("bayPanel-"+bay.id), bay);
+  });
+}
+
+/* ---------- rendering: inspector ---------- */
+function groupOptionsHtml(selectedId){
+  var opts = '<option value="">— No group —</option>';
+  opts += state.groups.map(function(g){
+    return '<option value="'+g.id+'"'+(g.id===selectedId?" selected":"")+'>'+escapeHtml(g.name)+'</option>';
+  }).join("");
+  return opts;
+}
+function routingSegHtml(activeState){
+  return '<div class="segmented" id="routingSeg" role="group" aria-label="Column routing">' +
+    ROUTING_STATES.map(function(s){
+      return '<button type="button" class="seg-btn'+(activeState===s?' is-active':'')+'" data-state="'+s+'">'+ROUTING_LABELS[s]+'</button>';
+    }).join("") +
+    '</div>';
+}
+function gearWidthSegHtml(active, id){
+  return '<div class="segmented" id="'+id+'" role="group" aria-label="Gear width">' +
+    ["full","half"].map(function(w){
+      return '<button type="button" class="seg-btn'+(active===w?' is-active':'')+'" data-width="'+w+'">'+(w==="full"?"Full width":"Half width")+'</button>';
+    }).join("") + '</div>';
+}
+function gearHeightSegHtml(active, id){
+  return '<div class="segmented" id="'+id+'" role="group" aria-label="Gear height">' +
+    GEAR_HEIGHTS.map(function(h){
+      return '<button type="button" class="seg-btn'+(active===h?' is-active':'')+'" data-height="'+h+'">'+h+'U</button>';
+    }).join("") + '</div>';
+}
+function renderGearInGrid(g){
+  var el = document.querySelector('.gear-piece[data-gear="'+cssEscape(g.id)+'"]');
+  if(!el) return;
+  var nameEl = el.querySelector(".gear-name");
+  if(nameEl){
+    if(g.name){ nameEl.className = "gear-name"; nameEl.textContent = g.name; }
+    else { nameEl.className = "gear-name placeholder"; nameEl.textContent = "Unnamed"; }
+  }
+  var existingDot = el.querySelector(".note-dot");
+  if(g.notes && !existingDot){ var d=document.createElement("span"); d.className="note-dot"; el.appendChild(d); }
+  if(!g.notes && existingDot){ existingDot.remove(); }
+  el.title = (g.name || "Unnamed") + " · " + g.heightU + "U" + (g.width==="half"?" half-width":"") + (g.notes ? " · " + g.notes : "");
+}
+function renderGearInspector(host, bay){
+  var list = selectedGear(bay);
+  if(!list.length){
+    host.innerHTML = '<div class="insp-bar"><p class="insp-empty">Select a piece of gear to edit it, or use "+ Add gear" to add one to this rack.</p></div>';
+    return;
+  }
+  var g = list[0];
+  var idx = indexOfGear(bay, g.id);
+  host.innerHTML =
+    '<div class="insp-bar">' +
+    '<div class="field insp-id"><label>Gear</label><div class="insp-id-row"><h2>'+g.heightU+'U</h2>' +
+      '<div class="insp-nav">' +
+        '<button class="icon-btn" id="gearUpBtn" '+(idx<=0?"disabled":"")+' title="Move up in rack" aria-label="Move up in rack">▲</button>' +
+        '<button class="icon-btn" id="gearDownBtn" '+(idx>=bay.gear.length-1?"disabled":"")+' title="Move down in rack" aria-label="Move down in rack">▼</button>' +
+      '</div></div></div>' +
+    '<div class="field field-grow"><label for="gearNameInput">Name</label><input type="text" id="gearNameInput" value="'+escapeAttr(g.name)+'" placeholder="e.g. SSL Bus Compressor" maxlength="60" /></div>' +
+    '<div class="field field-grow"><label for="gearNotesInput">Notes</label><input type="text" id="gearNotesInput" value="'+escapeAttr(g.notes)+'" placeholder="Optional — model, cable run, anything worth remembering" /></div>' +
+    '<div class="field"><label>Width</label>'+gearWidthSegHtml(g.width, "gearWidthSeg")+'</div>' +
+    '<div class="field"><label>Actions</label><div class="btn-row"><button class="btn btn-sm btn-danger" id="deleteGearBtn" type="button">Delete</button></div></div>' +
+    '</div>';
+  var nameInput = document.getElementById("gearNameInput");
+  nameInput.addEventListener("input", function(){ g.name = nameInput.value; renderGearInGrid(g); markDirty(); });
+  var notesInput = document.getElementById("gearNotesInput");
+  notesInput.addEventListener("input", function(){ g.notes = notesInput.value; renderGearInGrid(g); markDirty(); });
+  var widthSeg = document.getElementById("gearWidthSeg");
+  widthSeg.addEventListener("click", function(e){
+    var btn = e.target.closest(".seg-btn"); if(!btn) return;
+    g.width = btn.getAttribute("data-width");
+    markDirty(); renderGrid(); renderInspector();
+  });
+  document.getElementById("gearUpBtn").addEventListener("click", function(){ moveGear(bay.id, g.id, -1); });
+  document.getElementById("gearDownBtn").addEventListener("click", function(){ moveGear(bay.id, g.id, 1); });
+  wireInlineConfirm(document.getElementById("deleteGearBtn"), function(){ deleteGear(bay.id, g.id); }, "Delete gear?");
+  setTimeout(function(){ nameInput.focus(); nameInput.setSelectionRange(nameInput.value.length, nameInput.value.length); }, 0);
+}
+function renderInspector(){
+  var host = document.getElementById("inspectorBody");
+  var bay = getActiveBay();
+  if(bay && bay.type === "rack"){ renderGearInspector(host, bay); return; }
+  if(!bay && ui.section === "rack"){
+    host.innerHTML = '<div class="insp-bar"><p class="insp-empty">Add a rack to get started.</p></div>';
+    return;
+  }
+  var ports = selectedPorts(bay);
+  if(!bay || ports.length === 0){
+    host.innerHTML = '<div class="insp-bar"><p class="insp-empty">Select a port to edit it. Shift-click for a range, ⌘/Ctrl-click to add ports individually.</p></div>';
+    return;
+  }
+  if(ports.length === 1){
+    var p = ports[0];
+    var order = bay.ports.map(function(x){return x.id;});
+    var idx = order.indexOf(p.id);
+    var posLabel = p.row ? (p.row.toUpperCase()+" "+p.index) : ("PORT "+p.index);
+    host.innerHTML =
+      '<div class="insp-bar">' +
+      '<div class="field insp-id"><label>Port</label><div class="insp-id-row"><h2>'+escapeHtml(posLabel)+'</h2>' +
+        '<div class="insp-nav">' +
+          '<button class="icon-btn" id="prevPortBtn" '+(idx<=0?"disabled":"")+' title="Previous port" aria-label="Previous port">‹</button>' +
+          '<button class="icon-btn" id="nextPortBtn" '+(idx>=order.length-1?"disabled":"")+' title="Next port" aria-label="Next port">›</button>' +
+        '</div></div></div>' +
+      '<div class="field field-grow"><label for="labelInput">Label</label><input type="text" id="labelInput" value="'+escapeAttr(p.label)+'" placeholder="e.g. Kick In" maxlength="60" /></div>' +
+      '<div class="field field-grow"><label for="notesInput">Notes</label><input type="text" id="notesInput" value="'+escapeAttr(p.notes)+'" placeholder="Optional — cable run, gain, anything worth remembering" /></div>' +
+      '<div class="field"><label for="groupSelect">Device group</label>' +
+        '<div class="group-picker"><select id="groupSelect">'+groupOptionsHtml(p.groupId)+'</select></div></div>' +
+      (bay.type==="trs" ? '<div class="field"><label>Routing</label>'+routingSegHtml((getColumn(bay,p.index)||{}).state||"normal")+'</div>' : '') +
+      '</div>';
+    var labelInput = document.getElementById("labelInput");
+    labelInput.addEventListener("input", function(){ p.label = labelInput.value; renderPortInGrid(p); markDirty(); });
+    labelInput.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); advanceSelection(bay, 1); }
+    });
+    var notesInput = document.getElementById("notesInput");
+    notesInput.addEventListener("input", function(){ p.notes = notesInput.value; renderPortInGrid(p); markDirty(); });
+    document.getElementById("groupSelect").addEventListener("change", function(e){
+      p.groupId = e.target.value || null; renderPortInGrid(p); markDirty();
+    });
+    var routingSeg = document.getElementById("routingSeg");
+    if(routingSeg){
+      routingSeg.addEventListener("click", function(e){
+        var btn = e.target.closest(".seg-btn"); if(!btn) return;
+        var newState = btn.getAttribute("data-state");
+        setColumnState(bay, p.index, newState);
+        renderGlyphInGrid(bay, p.index);
+        Array.prototype.forEach.call(routingSeg.querySelectorAll(".seg-btn"), function(b){
+          b.classList.toggle("is-active", b.getAttribute("data-state")===newState);
+        });
+        markDirty();
+      });
+    }
+    var prevBtn = document.getElementById("prevPortBtn");
+    var nextBtn = document.getElementById("nextPortBtn");
+    if(prevBtn) prevBtn.addEventListener("click", function(){ advanceSelection(bay, -1); });
+    if(nextBtn) nextBtn.addEventListener("click", function(){ advanceSelection(bay, 1); });
+    setTimeout(function(){ labelInput.focus(); labelInput.setSelectionRange(labelInput.value.length, labelInput.value.length); }, 0);
+  } else {
+    var bulkColState = null;
+    if(bay.type === "trs"){
+      var seenStates = {};
+      ports.forEach(function(pp){ var c=getColumn(bay,pp.index); if(c) seenStates[c.state]=true; });
+      var stateKeys = Object.keys(seenStates);
+      bulkColState = stateKeys.length===1 ? stateKeys[0] : null;
+    }
+    host.innerHTML =
+      '<div class="insp-bar">' +
+      '<div class="field insp-id"><label>Selection</label><div class="insp-id-row"><h2>'+ports.length+' ports</h2></div></div>' +
+      '<div class="field field-grow"><label for="bulkGroupSelect">Assign device group</label>' +
+        '<select id="bulkGroupSelect">'+groupOptionsHtml(null)+'</select></div>' +
+      (bay.type==="trs" ? '<div class="field"><label>Routing</label>'+routingSegHtml(bulkColState)+'</div>' : '') +
+      '<div class="field"><label>Actions</label><div class="btn-row">' +
+        '<button class="btn btn-sm" id="bulkApplyBtn" type="button">Apply group</button>' +
+        '<button class="btn btn-sm btn-ghost" id="bulkClearGroupBtn" type="button">Clear group</button>' +
+        '<button class="btn btn-sm btn-ghost" id="bulkClearLabelsBtn" type="button">Clear labels</button>' +
+        '<button class="btn btn-sm btn-ghost" id="bulkDeselectBtn" type="button">Deselect</button>' +
+      '</div></div>' +
+      '</div>';
+    document.getElementById("bulkApplyBtn").addEventListener("click", function(){
+      var gid = document.getElementById("bulkGroupSelect").value || null;
+      ports.forEach(function(pp){ pp.groupId = gid; });
+      markDirty(); renderGrid(); renderInspector();
+    });
+    document.getElementById("bulkClearGroupBtn").addEventListener("click", function(){
+      ports.forEach(function(pp){ pp.groupId = null; });
+      markDirty(); renderGrid(); renderInspector();
+    });
+    document.getElementById("bulkClearLabelsBtn").addEventListener("click", function(){
+      ports.forEach(function(pp){ pp.label=""; pp.notes=""; });
+      markDirty(); renderGrid(); renderInspector();
+    });
+    document.getElementById("bulkDeselectBtn").addEventListener("click", clearSelection);
+    var bulkRoutingSeg = document.getElementById("routingSeg");
+    if(bulkRoutingSeg){
+      bulkRoutingSeg.addEventListener("click", function(e){
+        var btn = e.target.closest(".seg-btn"); if(!btn) return;
+        var newState = btn.getAttribute("data-state");
+        var seenCols = {};
+        ports.forEach(function(pp){
+          if(!seenCols[pp.index]){ seenCols[pp.index]=true; setColumnState(bay, pp.index, newState); }
+        });
+        markDirty(); renderGrid(); renderInspector();
+      });
+    }
+  }
+}
+function advanceSelection(bay, dir){
+  var order = bay.ports.map(function(p){return p.id;});
+  var cur = ui.anchor || ui.selection[0];
+  var idx = order.indexOf(cur);
+  var next = Math.max(0, Math.min(order.length-1, idx+dir));
+  selectPort(bay, order[next], {shift:false, ctrl:false});
+}
+function renderPortInGrid(p){
+  var el = document.querySelector('.port[data-port="'+cssEscape(p.id)+'"]');
+  if(!el) return;
+  var group = p.groupId ? getGroup(p.groupId) : null;
+  el.style.borderColor = group ? group.color : "var(--border-strong)";
+  el.style.borderWidth = group ? "3px" : "";
+  var lbl = el.querySelector(".lbl");
+  if(p.label){ lbl.className="lbl"; lbl.textContent = p.label; }
+  else { lbl.className="lbl placeholder"; lbl.textContent = "—"; }
+  var existingDot = el.querySelector(".note-dot");
+  if(p.notes && !existingDot){ var d=document.createElement("span"); d.className="note-dot"; el.appendChild(d); }
+  if(!p.notes && existingDot){ existingDot.remove(); }
+}
+function renderGlyphInGrid(bay, colIndex){
+  var el = document.querySelector('.glyph-cell[data-col="'+colIndex+'"]');
+  if(!el) return;
+  var col = getColumn(bay, colIndex);
+  var state = col ? col.state : "normal";
+  var label = ROUTING_LABELS[state] || "Normal";
+  el.innerHTML = routingGlyphHtml(state);
+  el.title = "Column "+colIndex+" — "+label;
+  el.setAttribute("aria-label", "Column "+colIndex+" routing: "+label);
+}
+function cssEscape(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g, function(c){ return "\\"+c; }); }
+
+/* ---------- groups modal ---------- */
+function openGroupsModal(){ ui.groupsModalOpen = true; renderGroupsModal(); }
+function closeGroupsModal(){ ui.groupsModalOpen = false; document.getElementById("modalHost").innerHTML=""; }
+function renderGroupsModal(){
+  var host = document.getElementById("modalHost");
+  if(!ui.groupsModalOpen){ host.innerHTML=""; return; }
+  var rows = state.groups.map(function(g){
+    return '<div class="group-row" data-group="'+g.id+'">' +
+      '<span class="swatch" style="background:'+g.color+'"></span>' +
+      '<input type="text" value="'+escapeAttr(g.name)+'" data-field="name" />' +
+      '<span class="group-usage">'+groupUsage(g.id)+' port'+(groupUsage(g.id)===1?"":"s")+'</span>' +
+      '<button type="button" class="icon-btn" data-act="delete-group" title="Delete group">×</button>' +
+      '</div>';
+  }).join("") || '<p class="insp-empty">No device groups yet. Create one below.</p>';
+  host.innerHTML =
+    '<div class="modal-overlay" id="groupsOverlay">' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-label="Device groups">' +
+        '<div class="modal-head"><h2>Device groups</h2><button type="button" class="icon-btn" id="closeGroupsBtn" aria-label="Close">×</button></div>' +
+        '<div class="modal-body">' +
+          '<div id="groupRows">'+rows+'</div>' +
+          '<div class="new-group-form">' +
+            '<div class="field"><label for="newGroupName">New group name</label>' +
+            '<input type="text" id="newGroupName" placeholder="e.g. A/D Converter 1" maxlength="40" /></div>' +
+            '<label class="eyebrow" style="display:block;margin-bottom:6px;">Color</label>' +
+            '<div class="palette" id="newGroupPalette"></div>' +
+            '<button type="button" class="btn btn-primary btn-sm" id="addGroupBtn">+ Add group</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  var chosenColor = nextPaletteColor();
+  var paletteHost = document.getElementById("newGroupPalette");
+  paletteHost.innerHTML = GROUP_PALETTE.map(function(c){
+    return '<button type="button" style="background:'+c.hex+'" data-hex="'+c.hex+'" title="'+c.name+'" class="'+(c.hex===chosenColor?"is-active":"")+'"></button>';
+  }).join("");
+  Array.prototype.forEach.call(paletteHost.querySelectorAll("button"), function(btn){
+    btn.addEventListener("click", function(){
+      chosenColor = btn.getAttribute("data-hex");
+      Array.prototype.forEach.call(paletteHost.querySelectorAll("button"), function(b2){ b2.classList.toggle("is-active", b2===btn); });
+    });
+  });
+
+  document.getElementById("closeGroupsBtn").addEventListener("click", function(){ closeGroupsModal(); renderAll(); });
+  document.getElementById("groupsOverlay").addEventListener("click", function(e){
+    if(e.target.id === "groupsOverlay"){ closeGroupsModal(); renderAll(); }
+  });
+  document.getElementById("addGroupBtn").addEventListener("click", function(){
+    var input = document.getElementById("newGroupName");
+    if(!input.value.trim()){ input.focus(); return; }
+    addGroup(input.value, chosenColor);
+    renderGroupsModal();
+    renderGrid();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#groupRows [data-field="name"]'), function(input){
+    var id = input.closest(".group-row").getAttribute("data-group");
+    input.addEventListener("change", function(){ renameGroup(id, input.value); renderGroupsModal(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#groupRows [data-act="delete-group"]'), function(btn){
+    var gid = btn.closest(".group-row").getAttribute("data-group");
+    wireInlineConfirm(btn, function(){ deleteGroup(gid); renderGroupsModal(); }, "Delete group?");
+  });
+}
+
+/* ---------- menus (export / import / add-bay) ---------- */
+var ALL_MENU_IDS = ["exportMenu","importMenu","addBayMenu"];
+function closeAllMenus(exceptId){
+  ALL_MENU_IDS.forEach(function(id){ if(id !== exceptId) document.getElementById(id).hidden = true; });
+}
+function toggleMenu(id){
+  var el = document.getElementById(id);
+  var willOpen = el.hidden;
+  closeAllMenus(id);
+  el.hidden = !willOpen;
+}
+// Menu CONTENT is rebuilt on every render (state-dependent); the click
+// handlers are wired once in init() so re-rendering never re-attaches them.
+function renderMenus(){
+  document.getElementById("exportMenu").innerHTML =
+    '<div class="menu-label">This bay</div>' +
+    '<button type="button" data-act="export-png">Image — PNG</button>' +
+    '<button type="button" data-act="export-jpg">Image — JPG</button>' +
+    '<div class="menu-label">All bays (master sheet)</div>' +
+    '<button type="button" data-act="export-master-png">Image — PNG</button>' +
+    '<button type="button" data-act="export-master-jpg">Image — JPG</button>' +
+    '<div class="menu-divider"></div>' +
+    '<button type="button" data-act="export-json">Project — JSON</button>' +
+    '<button type="button" data-act="export-csv">Labels — CSV</button>';
+  document.getElementById("importMenu").innerHTML =
+    '<button type="button" data-act="import-json">Project — JSON</button>' +
+    '<button type="button" data-act="import-csv">Labels — CSV</button>';
+  document.getElementById("addBayBtn").textContent = ui.section === "trs" ? "+ Add bay ▾" : (ui.section === "rack" ? "+ Add rack" : "+ Add bay");
+  document.getElementById("addBayMenu").innerHTML = ui.section === "trs"
+    ? TRS_SIZES.map(function(sz){
+        return '<button type="button" data-size="'+sz+'">'+sz+'-point ('+(sz/2)+' × 2)</button>';
+      }).join("")
+    : "";
+}
+function wireMenus(){
+  document.getElementById("exportMenu").addEventListener("click", function(e){
+    var act = e.target.getAttribute("data-act"); if(!act) return;
+    document.getElementById("exportMenu").hidden = true;
+    var bay = getActiveBay();
+    if(act==="export-png") exportImage(bay, "png");
+    if(act==="export-jpg") exportImage(bay, "jpg");
+    if(act==="export-master-png") exportMasterSheet("png");
+    if(act==="export-master-jpg") exportMasterSheet("jpg");
+    if(act==="export-json") exportProjectJSON();
+    if(act==="export-csv") exportLabelsCSV();
+  });
+  document.getElementById("importMenu").addEventListener("click", function(e){
+    var act = e.target.getAttribute("data-act"); if(!act) return;
+    document.getElementById("importMenu").hidden = true;
+    if(act==="import-json") document.getElementById("fileInputJson").click();
+    if(act==="import-csv") document.getElementById("fileInputCsv").click();
+  });
+  document.getElementById("addBayMenu").addEventListener("click", function(e){
+    var size = e.target.getAttribute("data-size"); if(!size) return;
+    document.getElementById("addBayMenu").hidden = true;
+    addBay("trs", Number(size));
+  });
+  document.getElementById("addBayBtn").addEventListener("click", function(e){
+    e.stopPropagation();
+    if(ui.section === "trs"){ toggleMenu("addBayMenu"); }
+    else if(ui.section === "rack"){ closeAllMenus(); openAddRackModal(); }
+    else { closeAllMenus(); addBay("xlr", null); }
+  });
+}
+
+/* ---------- add rack / add gear modals ---------- */
+function openAddRackModal(){
+  ui.addRackModalOpen = true;
+  renderAddRackModal();
+}
+function closeAddRackModal(){
+  ui.addRackModalOpen = false;
+  document.getElementById("modalHost").innerHTML = "";
+}
+function renderAddRackModal(){
+  var host = document.getElementById("modalHost");
+  if(!ui.addRackModalOpen){ host.innerHTML=""; return; }
+  host.innerHTML =
+    '<div class="modal-overlay" id="addRackOverlay">' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-label="Add rack" style="width:min(360px,100%);">' +
+        '<div class="modal-head"><h2>Add rack</h2><button type="button" class="icon-btn" id="closeAddRackBtn" aria-label="Close">×</button></div>' +
+        '<div class="modal-body stack">' +
+          '<div class="field"><label for="rackHeightInput">Height (rack units)</label>' +
+          '<input type="text" inputmode="numeric" id="rackHeightInput" value="12" /></div>' +
+          '<div class="btn-row"><button type="button" class="btn btn-primary btn-sm" id="createRackBtn">Create rack</button></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.getElementById("closeAddRackBtn").addEventListener("click", closeAddRackModal);
+  document.getElementById("addRackOverlay").addEventListener("click", function(e){ if(e.target.id==="addRackOverlay") closeAddRackModal(); });
+  var input = document.getElementById("rackHeightInput");
+  function commit(){
+    var h = clampRackHeight(input.value);
+    closeAddRackModal();
+    addBay("rack", h);
+  }
+  document.getElementById("createRackBtn").addEventListener("click", commit);
+  input.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); commit(); } });
+  setTimeout(function(){ input.focus(); input.select(); }, 0);
+}
+function openAddGearModal(rackId){
+  ui.addGearRackId = rackId;
+  ui.addGearModalOpen = true;
+  renderAddGearModal();
+}
+function closeAddGearModal(){
+  ui.addGearModalOpen = false;
+  ui.addGearRackId = null;
+  document.getElementById("modalHost").innerHTML = "";
+}
+function renderAddGearModal(){
+  var host = document.getElementById("modalHost");
+  if(!ui.addGearModalOpen){ host.innerHTML=""; return; }
+  var rack = getBay(ui.addGearRackId);
+  if(!rack){ closeAddGearModal(); return; }
+  var chosenHeight = 1, chosenWidth = "full";
+  host.innerHTML =
+    '<div class="modal-overlay" id="addGearOverlay">' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-label="Add gear" style="width:min(420px,100%);">' +
+        '<div class="modal-head"><h2>Add gear</h2><button type="button" class="icon-btn" id="closeAddGearBtn" aria-label="Close">×</button></div>' +
+        '<div class="modal-body stack">' +
+          '<div class="field field-grow"><label for="gearNameInput2">Name</label>' +
+            '<input type="text" id="gearNameInput2" placeholder="e.g. SSL Bus Compressor" maxlength="60" /></div>' +
+          '<div class="field"><label>Height</label>'+gearHeightSegHtml(chosenHeight, "addGearHeightSeg")+'</div>' +
+          '<div class="field"><label>Width</label>'+gearWidthSegHtml(chosenWidth, "addGearWidthSeg")+'</div>' +
+          '<p class="insp-empty" style="padding:0;">'+rackFreeU(rack)+'U free in this rack</p>' +
+          '<div class="btn-row"><button type="button" class="btn btn-primary btn-sm" id="createGearBtn">Add to rack</button></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.getElementById("closeAddGearBtn").addEventListener("click", closeAddGearModal);
+  document.getElementById("addGearOverlay").addEventListener("click", function(e){ if(e.target.id==="addGearOverlay") closeAddGearModal(); });
+  var heightSeg = document.getElementById("addGearHeightSeg");
+  heightSeg.addEventListener("click", function(e){
+    var btn = e.target.closest(".seg-btn"); if(!btn) return;
+    chosenHeight = Number(btn.getAttribute("data-height"));
+    Array.prototype.forEach.call(heightSeg.querySelectorAll(".seg-btn"), function(b){ b.classList.toggle("is-active", Number(b.getAttribute("data-height"))===chosenHeight); });
+  });
+  var widthSeg = document.getElementById("addGearWidthSeg");
+  widthSeg.addEventListener("click", function(e){
+    var btn = e.target.closest(".seg-btn"); if(!btn) return;
+    chosenWidth = btn.getAttribute("data-width");
+    Array.prototype.forEach.call(widthSeg.querySelectorAll(".seg-btn"), function(b){ b.classList.toggle("is-active", b.getAttribute("data-width")===chosenWidth); });
+  });
+  var nameInput = document.getElementById("gearNameInput2");
+  function commit(){
+    var g = addGearToRack(rack.id, nameInput.value, "", chosenHeight, chosenWidth);
+    if(!g) return;
+    closeAddGearModal();
+    ui.activeBay[rack.type] = rack.id;
+    ui.selection = [g.id]; ui.anchor = g.id;
+    renderAll();
+  }
+  document.getElementById("createGearBtn").addEventListener("click", commit);
+  nameInput.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); commit(); } });
+  setTimeout(function(){ nameInput.focus(); }, 0);
+}
+
+/* ---------- export: canvas image ---------- */
+function wrapText(ctx, text, maxWidth, maxLines){
+  var words = String(text).split(/\s+/).filter(Boolean);
+  if(words.length===0) return [];
+  var lines = [], current = "";
+  for(var i=0;i<words.length;i++){
+    var test = current ? current + " " + words[i] : words[i];
+    if(ctx.measureText(test).width > maxWidth && current){
+      lines.push(current);
+      current = words[i];
+      if(lines.length === maxLines){ current=""; break; }
+    } else {
+      current = test;
+    }
+  }
+  if(current) lines.push(current);
+  if(lines.length > maxLines) lines = lines.slice(0, maxLines);
+  var last = lines[lines.length-1];
+  if(last){
+    while(ctx.measureText(last+"…").width > maxWidth && last.length>1){ last = last.slice(0,-1); }
+    if(words.join(" ").length > lines.join(" ").length) lines[lines.length-1] = last + "…";
+  }
+  return lines;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function canvasLayoutRows(bay){
+  return bay.type === "xlr"
+    ? [{tag:null, ports: bay.ports, sectionEnd:false}]
+    : trsVisualRows(bay);
+}
+function drawRoutingGlyph(ctx, x, y, state, lineColor, faintColor){
+  if(state === "thru"){
+    ctx.fillStyle = faintColor;
+    ctx.font = "600 15px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("×", x, y+1);
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    return;
+  }
+  var halfH = 7;
+  ctx.strokeStyle = lineColor; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+  ctx.setLineDash(state === "half-normal" ? [3,3] : []);
+  ctx.beginPath(); ctx.moveTo(x, y-halfH); ctx.lineTo(x, y+halfH); ctx.stroke();
+  ctx.setLineDash([]);
+}
+// Shared sizing constants for every canvas export (single-bay or master
+// sheet) so the two stay visually consistent with each other.
+var CANVAS_METRICS = {CELL:96, GAP:12, CHUNK:8, CHUNK_GAP:14, SECTION_GAP:16};
+// Measures one bay's row/column layout without drawing anything, so both
+// drawBayCanvas (one bay) and drawMasterSheetCanvas (many bays sharing one
+// tall canvas) can size themselves from the same numbers.
+function layoutBay(bay, m){
+  var INNER_GAP = bay.type === "trs" ? 34 : m.GAP;
+  var layoutRows = canvasLayoutRows(bay);
+  var cols = layoutRows[0].ports.length;
+  function chunkOffset(i){ return Math.floor(i / m.CHUNK) * m.CHUNK_GAP; }
+  var gridW = (cols-1)*(m.CELL+m.GAP) + m.CELL + chunkOffset(cols-1);
+  var rowYs = [], cursorY = 0;
+  layoutRows.forEach(function(r, i){
+    rowYs.push(cursorY);
+    var isStripTop = bay.type === "trs" && (i % 2 === 0);
+    cursorY += m.CELL + (isStripTop ? INNER_GAP : m.GAP) + (r.sectionEnd ? m.SECTION_GAP : 0);
+  });
+  var gridH = cursorY - m.GAP;
+  return {layoutRows:layoutRows, cols:cols, gridW:gridW, gridH:gridH, rowYs:rowYs, chunkOffset:chunkOffset};
+}
+// Draws one bay's ports + routing glyphs (no title, no legend, no panel
+// chrome) starting at topY — the piece that's identical whether it's the
+// only bay on the canvas or one of several stacked on a master sheet.
+function drawBayContent(ctx, bay, layout, m, leftPad, topY, colors){
+  function drawRow(portsInRow, yTop, rowLabel){
+    if(rowLabel){
+      ctx.fillStyle = colors.faintColor;
+      ctx.font = "600 11px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+      ctx.textAlign = "right";
+      ctx.fillText(rowLabel, leftPad-14, yTop + m.CELL/2 + 4);
+      ctx.textAlign = "left";
+    }
+    portsInRow.forEach(function(p, i){
+      var x = leftPad + i*(m.CELL+m.GAP) + layout.chunkOffset(i);
+      var group = p.groupId ? getGroup(p.groupId) : null;
+      ctx.fillStyle = colors.cellColor;
+      roundRect(ctx,x,yTop,m.CELL,m.CELL,10); ctx.fill();
+      ctx.lineWidth = group ? 4 : 1.5;
+      ctx.strokeStyle = group ? group.color : colors.borderColor;
+      roundRect(ctx,x+ctx.lineWidth/2,yTop+ctx.lineWidth/2,m.CELL-ctx.lineWidth,m.CELL-ctx.lineWidth,9); ctx.stroke();
+
+      ctx.fillStyle = colors.faintColor;
+      ctx.font = "500 12px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+      ctx.fillText(String(p.index), x+10, yTop+20);
+
+      ctx.font = "500 13px 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif";
+      ctx.fillStyle = p.label ? colors.inkColor : colors.faintColor;
+      ctx.textAlign = "center";
+      var text = p.label || "—";
+      var lines = p.label ? wrapText(ctx, text, m.CELL-16, 3) : ["—"];
+      var lh = 16, startY = yTop + m.CELL/2 - ((lines.length-1)*lh)/2 + 5;
+      lines.forEach(function(ln, li){ ctx.fillText(ln, x+m.CELL/2, startY+li*lh); });
+      ctx.textAlign = "left";
+
+      if(p.notes){
+        ctx.fillStyle = colors.accentColor;
+        ctx.beginPath(); ctx.arc(x+m.CELL-10, yTop+m.CELL-10, 3.5, 0, Math.PI*2); ctx.fill();
+      }
+    });
+  }
+
+  layout.layoutRows.forEach(function(r, i){
+    drawRow(r.ports, topY + layout.rowYs[i], r.tag);
+  });
+
+  if(bay.type === "trs"){
+    trsStrips(bay).forEach(function(strip, si){
+      var topRowIdx = si*2, bottomRowIdx = si*2+1;
+      var yTopEdge = topY + layout.rowYs[topRowIdx] + m.CELL;
+      var yBottomEdge = topY + layout.rowYs[bottomRowIdx];
+      var yMid = (yTopEdge + yBottomEdge) / 2;
+      strip.top.forEach(function(p, i){
+        var col = getColumn(bay, strip.colStart + i + 1);
+        var x = leftPad + i*(m.CELL+m.GAP) + layout.chunkOffset(i) + m.CELL/2;
+        drawRoutingGlyph(ctx, x, yMid, col ? col.state : "normal", colors.faintColor, colors.faintColor);
+      });
+    });
+  }
+}
+function drawPanelChrome(ctx, canvasW, canvasH, panelColor){
+  ctx.fillStyle = panelColor;
+  roundRect(ctx,0,0,canvasW,canvasH,18); ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.035)"; ctx.lineWidth=1;
+  for(var y=0;y<canvasH;y+=3){ ctx.beginPath(); ctx.moveTo(0,y+0.5); ctx.lineTo(canvasW,y+0.5); ctx.stroke(); }
+
+  [[16,16],[canvasW-16,16],[16,canvasH-16],[canvasW-16,canvasH-16]].forEach(function(pt){
+    ctx.fillStyle = "#3a3e40"; ctx.beginPath(); ctx.arc(pt[0],pt[1],6,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#54595b"; ctx.lineWidth=1; ctx.stroke();
+    ctx.strokeStyle="#54595b"; ctx.beginPath(); ctx.moveTo(pt[0]-4,pt[1]-1); ctx.lineTo(pt[0]+4,pt[1]+2); ctx.stroke();
+  });
+}
+function drawLegend(ctx, groups, canvasW, MARGIN, startY, LEGEND_ROW_H, inkColor){
+  var lx = MARGIN, ly = startY;
+  ctx.font = "600 14px 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif";
+  groups.forEach(function(g){
+    var w = ctx.measureText(g.name).width + 34;
+    if(lx + w > canvasW - MARGIN){ lx = MARGIN; ly += LEGEND_ROW_H; }
+    ctx.fillStyle = g.color;
+    roundRect(ctx, lx, ly-14, 16, 16, 4); ctx.fill();
+    ctx.fillStyle = inkColor;
+    ctx.fillText(g.name, lx+22, ly-1);
+    lx += w;
+  });
+}
+function measureLegendHeight(ctx0, groups, canvasW, MARGIN, LEGEND_TOP, LEGEND_ROW_H){
+  if(!groups.length) return 0;
+  ctx0.font = "600 14px 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif";
+  var x = 0, line = 1;
+  groups.forEach(function(g){
+    var w = ctx0.measureText(g.name).width + 34;
+    if(x + w > canvasW - MARGIN*2){ line++; x = 0; }
+    x += w;
+  });
+  return LEGEND_TOP + line*LEGEND_ROW_H + 6;
+}
+function drawBayCanvas(bay){
+  var m = CANVAS_METRICS;
+  var MARGIN=44, ROWLABEL_W=64, TITLE_H=104, LEGEND_ROW_H=30, LEGEND_TOP=26;
+  var layout = layoutBay(bay, m);
+  var leftPad = MARGIN + (bay.type==="trs" ? ROWLABEL_W : 0);
+  var canvasW = leftPad + layout.gridW + MARGIN;
+
+  var used = groupsUsedInBay(bay);
+  var probe = document.createElement("canvas");
+  var legendH = measureLegendHeight(probe.getContext("2d"), used, canvasW, MARGIN, LEGEND_TOP, LEGEND_ROW_H);
+  var canvasH = TITLE_H + layout.gridH + legendH + MARGIN;
+
+  var canvas = document.createElement("canvas");
+  canvas.width = canvasW; canvas.height = canvasH;
+  var ctx = canvas.getContext("2d");
+
+  var colors = {panelColor:"#24272A", cellColor:"#2E3134", borderColor:"#454A4D",
+      inkColor:"#ECEFED", faintColor:"#9BA2A0", accentColor:"#4FC79A"};
+
+  drawPanelChrome(ctx, canvasW, canvasH, colors.panelColor);
+
+  ctx.fillStyle = colors.accentColor;
+  ctx.font = "800 34px 'Big Shoulders Display', 'Arial Narrow', sans-serif";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(bay.name.toUpperCase(), MARGIN, 52);
+  ctx.fillStyle = colors.faintColor;
+  ctx.font = "500 12px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+  ctx.fillText((bay.type==="xlr" ? "16 × XLR-F PASSTHROUGH" : (bay.size + "-POINT TRS BANTAM")) + "   ·   PATCH SHEET", MARGIN, 74);
+  var dateStr = new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
+  ctx.textAlign="right";
+  ctx.fillText("EXPORTED " + dateStr.toUpperCase(), canvasW-MARGIN, 74);
+  ctx.textAlign="left";
+
+  drawBayContent(ctx, bay, layout, m, leftPad, TITLE_H, colors);
+
+  if(used.length){
+    drawLegend(ctx, used, canvasW, MARGIN, TITLE_H + layout.gridH + LEGEND_TOP, LEGEND_ROW_H, colors.inkColor);
+  }
+
+  return canvas;
+}
+// ---------- export: rack canvas (shares drawPanelChrome/wrapText/roundRect
+// with the port-based bay export above, but lays out gear pieces instead
+// of a port grid) ----------
+function drawGearPiece(ctx, item, x, w, topPx, RU, colors){
+  var y = topPx + 3;
+  var h = item.gear.heightU*RU - 6;
+  ctx.fillStyle = colors.cellColor;
+  roundRect(ctx, x, y, w, h, 8); ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = colors.borderColor;
+  roundRect(ctx, x+0.75, y+0.75, w-1.5, h-1.5, 7); ctx.stroke();
+
+  ctx.fillStyle = colors.faintColor;
+  ctx.font = "500 11px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+  ctx.textAlign = "right";
+  ctx.fillText(item.gear.heightU+"U", x+w-10, y+16);
+  ctx.textAlign = "left";
+
+  ctx.font = "600 14px 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif";
+  ctx.fillStyle = item.gear.name ? colors.inkColor : colors.faintColor;
+  var nameLines = wrapText(ctx, item.gear.name || "Unnamed", w-20, 2);
+  var ny = y + h/2 - ((nameLines.length-1)*17)/2 + (item.gear.notes ? -6 : 0);
+  nameLines.forEach(function(ln, li){ ctx.fillText(ln, x+10, ny+li*17); });
+
+  if(item.gear.notes){
+    ctx.font = "400 11px 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif";
+    ctx.fillStyle = colors.faintColor;
+    var noteLines = wrapText(ctx, item.gear.notes, w-20, 1);
+    if(noteLines[0]) ctx.fillText(noteLines[0], x+10, y+h-10);
+  }
+}
+function drawRackContent(ctx, rack, RU, leftPad, topY, colors, contentW){
+  var layout = layoutRackGear(rack);
+  ctx.strokeStyle = colors.borderColor; ctx.lineWidth = 1;
+  for(var i=0;i<=rack.heightU;i++){
+    var y = topY + i*RU + 0.5;
+    ctx.beginPath(); ctx.moveTo(leftPad, y); ctx.lineTo(leftPad+contentW, y); ctx.stroke();
+  }
+  ctx.font = "500 10px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+  ctx.fillStyle = colors.faintColor;
+  ctx.textAlign = "right";
+  for(var u=1;u<=rack.heightU;u++){
+    ctx.fillText(String(u), leftPad-10, topY + (u-1)*RU + RU/2 + 4);
+  }
+  ctx.textAlign = "left";
+  layout.items.forEach(function(item){
+    var topPx = topY + item.topU*RU;
+    var x, w;
+    if(item.side === "left"){ x = leftPad+2; w = contentW/2 - 4; }
+    else if(item.side === "right"){ x = leftPad + contentW/2 + 2; w = contentW/2 - 4; }
+    else { x = leftPad+2; w = contentW - 4; }
+    drawGearPiece(ctx, item, x, w, topPx, RU, colors);
+  });
+}
+var RACK_CANVAS = {RU:52, ROWLABEL_W:34, CONTENT_W:640};
+function drawRackCanvas(rack){
+  var MARGIN=44, TITLE_H=104, RU=RACK_CANVAS.RU, ROWLABEL_W=RACK_CANVAS.ROWLABEL_W, CONTENT_W=RACK_CANVAS.CONTENT_W;
+  var canvasW = MARGIN + ROWLABEL_W + CONTENT_W + MARGIN;
+  var canvasH = TITLE_H + rack.heightU*RU + MARGIN;
+  var canvas = document.createElement("canvas");
+  canvas.width = canvasW; canvas.height = canvasH;
+  var ctx = canvas.getContext("2d");
+  var colors = {panelColor:"#24272A", cellColor:"#2E3134", borderColor:"#454A4D",
+      inkColor:"#ECEFED", faintColor:"#9BA2A0", accentColor:"#4FC79A"};
+  drawPanelChrome(ctx, canvasW, canvasH, colors.panelColor);
+  ctx.fillStyle = colors.accentColor;
+  ctx.font = "800 34px 'Big Shoulders Display', 'Arial Narrow', sans-serif";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(rack.name.toUpperCase(), MARGIN, 52);
+  ctx.fillStyle = colors.faintColor;
+  ctx.font = "500 12px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+  ctx.fillText(rack.heightU + "U RACK FRAME   ·   PATCH SHEET", MARGIN, 74);
+  var dateStr = new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
+  ctx.textAlign="right";
+  ctx.fillText("EXPORTED " + dateStr.toUpperCase(), canvasW-MARGIN, 74);
+  ctx.textAlign="left";
+  drawRackContent(ctx, rack, RU, MARGIN+ROWLABEL_W, TITLE_H, colors, CONTENT_W);
+  return canvas;
+}
+// A single tall image stacking every bay in the session (grouped XLR-first,
+// then TRS, in tab order within each section) — one combined reference
+// sheet instead of exporting each bay separately.
+function drawMasterSheetCanvas(bays){
+  var m = CANVAS_METRICS;
+  var MARGIN=44, ROWLABEL_W=64, BAY_TITLE_H=64, SECTION_HEADER_H=50, BAY_GAP=48,
+      LEGEND_ROW_H=30, LEGEND_TOP=26, DOC_TITLE_H=110;
+
+  var items = bays.map(function(bay){
+    if(bay.type === "rack"){
+      var rackLeftPad = MARGIN + RACK_CANVAS.ROWLABEL_W;
+      return {bay:bay, isRack:true, leftPad:rackLeftPad, gridH: bay.heightU*RACK_CANVAS.RU, width: rackLeftPad + RACK_CANVAS.CONTENT_W + MARGIN};
+    }
+    var layout = layoutBay(bay, m);
+    var leftPad = MARGIN + (bay.type==="trs" ? ROWLABEL_W : 0);
+    return {bay:bay, isRack:false, layout:layout, leftPad:leftPad, gridH:layout.gridH, width: leftPad + layout.gridW + MARGIN};
+  });
+  var canvasW = items.reduce(function(w, it){ return Math.max(w, it.width); }, 640);
+
+  var cursorY = DOC_TITLE_H, lastType = null, sectionHeaders = [];
+  items.forEach(function(it){
+    if(it.bay.type !== lastType){
+      sectionHeaders.push({type: it.bay.type, y: cursorY});
+      cursorY += SECTION_HEADER_H;
+      lastType = it.bay.type;
+    }
+    it.titleY = cursorY;
+    cursorY += BAY_TITLE_H;
+    it.gridTopY = cursorY;
+    cursorY += it.gridH;
+    cursorY += BAY_GAP;
+  });
+  cursorY -= BAY_GAP;
+
+  var used = groupsUsedAcrossBays(bays);
+  var probe = document.createElement("canvas");
+  var legendH = measureLegendHeight(probe.getContext("2d"), used, canvasW, MARGIN, LEGEND_TOP, LEGEND_ROW_H);
+  var canvasH = cursorY + legendH + MARGIN;
+
+  var canvas = document.createElement("canvas");
+  canvas.width = canvasW; canvas.height = canvasH;
+  var ctx = canvas.getContext("2d");
+
+  var colors = {panelColor:"#24272A", cellColor:"#2E3134", borderColor:"#454A4D",
+      inkColor:"#ECEFED", faintColor:"#9BA2A0", accentColor:"#4FC79A"};
+
+  drawPanelChrome(ctx, canvasW, canvasH, colors.panelColor);
+
+  ctx.fillStyle = colors.accentColor;
+  ctx.font = "800 38px 'Big Shoulders Display', 'Arial Narrow', sans-serif";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("PATCH SHEET — MASTER", MARGIN, 54);
+  ctx.fillStyle = colors.faintColor;
+  ctx.font = "500 12px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+  ctx.fillText(bays.length + " BAY" + (bays.length===1?"":"S") + " IN THIS SESSION", MARGIN, 78);
+  var dateStr = new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
+  ctx.textAlign="right";
+  ctx.fillText("EXPORTED " + dateStr.toUpperCase(), canvasW-MARGIN, 78);
+  ctx.textAlign="left";
+  ctx.strokeStyle = colors.borderColor; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(MARGIN, 94); ctx.lineTo(canvasW-MARGIN, 94); ctx.stroke();
+
+  sectionHeaders.forEach(function(sh){
+    ctx.fillStyle = colors.faintColor;
+    ctx.font = "700 13px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+    var label = sh.type === "xlr" ? "XLR — 16PT PASSTHROUGH" : (sh.type === "trs" ? "TRS PATCHBAYS" : "RACK LAYOUTS");
+    ctx.fillText(label, MARGIN, sh.y + 18);
+  });
+
+  items.forEach(function(it){
+    var bay = it.bay;
+    ctx.fillStyle = colors.inkColor;
+    ctx.font = "700 22px 'Big Shoulders Display', 'Arial Narrow', sans-serif";
+    ctx.fillText(bay.name.toUpperCase(), MARGIN, it.titleY + 18);
+    ctx.fillStyle = colors.faintColor;
+    ctx.font = "500 11px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
+    var subtitle = bay.type==="xlr" ? "16 × XLR-F PASSTHROUGH" : (bay.type==="trs" ? (bay.size + "-POINT TRS BANTAM") : (bay.heightU + "U RACK FRAME"));
+    ctx.fillText(subtitle, MARGIN, it.titleY + 36);
+    if(it.isRack){
+      drawRackContent(ctx, bay, RACK_CANVAS.RU, it.leftPad, it.gridTopY, colors, RACK_CANVAS.CONTENT_W);
+    } else {
+      drawBayContent(ctx, bay, it.layout, m, it.leftPad, it.gridTopY, colors);
+    }
+  });
+
+  if(used.length){
+    drawLegend(ctx, used, canvasW, MARGIN, cursorY + LEGEND_TOP, LEGEND_ROW_H, colors.inkColor);
+  }
+
+  return canvas;
+}
+function exportImage(bay, format){
+  if(!bay){ showToast("No bay to export.", "error"); return; }
+  var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  ready.then(function(){
+    var canvas = bay.type === "rack" ? drawRackCanvas(bay) : drawBayCanvas(bay);
+    var mime = format==="jpg" ? "image/jpeg" : "image/png";
+    canvas.toBlob(function(blob){
+      if(!blob){ showToast("Couldn't render the image.", "error"); return; }
+      saveFile(slug(bay.name) + "." + (format==="jpg"?"jpg":"png"), blob);
+    }, mime, 0.95);
+  });
+}
+// Master Sheet always covers every bay in the whole session — XLR, then
+// TRS, then racks — regardless of which section or view mode is on screen.
+function exportMasterSheet(format){
+  var bays = baysOfType("xlr").concat(baysOfType("trs")).concat(baysOfType("rack"));
+  if(!bays.length){ showToast("No bays to export.", "error"); return; }
+  var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  ready.then(function(){
+    var canvas = drawMasterSheetCanvas(bays);
+    var mime = format==="jpg" ? "image/jpeg" : "image/png";
+    canvas.toBlob(function(blob){
+      if(!blob){ showToast("Couldn't render the image.", "error"); return; }
+      saveFile("patch-sheet-master." + (format==="jpg"?"jpg":"png"), blob);
+    }, mime, 0.95);
+  });
+}
+
+/* ---------- export: JSON / CSV ---------- */
+function exportProjectJSON(){
+  var text = JSON.stringify(state, null, 2);
+  saveFile("patch-sheet-project.json", text);
+}
+function csvField(v){
+  var s = v==null ? "" : String(v);
+  if(/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+function exportLabelsCSV(){
+  var rows = [CSV_COLUMNS];
+  state.bays.forEach(function(b){
+    if(b.type === "rack"){
+      b.gear.forEach(function(g, i){
+        rows.push([b.id, b.name, b.type, "", i+1, g.id, g.name, g.notes, "", "", g.heightU, g.width]);
+      });
+      return;
+    }
+    b.ports.forEach(function(p){
+      var g = p.groupId ? getGroup(p.groupId) : null;
+      var routing = b.type==="trs" ? ((getColumn(b,p.index)||{}).state || "normal") : "";
+      rows.push([b.id, b.name, b.type, p.row||"", p.index, p.id, p.label, p.notes, g?g.name:"", routing, "", ""]);
+    });
+  });
+  var text = rows.map(function(r){ return r.map(csvField).join(","); }).join("\r\n");
+  saveFile("patch-sheet-labels.csv", text);
+}
+function parseCSV(text){
+  var rows = [], row = [], field = "", inQuotes = false;
+  for(var i=0;i<text.length;i++){
+    var c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; }
+      } else { field += c; }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ","){ row.push(field); field = ""; }
+      else if(c === "\n"){ row.push(field); rows.push(row); row = []; field = ""; }
+      else if(c === "\r"){ /* skip */ }
+      else { field += c; }
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(function(r){ return !(r.length===1 && r[0]==="") ; });
+}
+
+/* ---------- import ---------- */
+function readFileText(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(){ resolve(String(reader.result)); };
+    reader.onerror = function(){ reject(reader.error); };
+    reader.readAsText(file);
+  });
+}
+function handleImportJSON(file){
+  readFileText(file).then(function(text){
+    var parsed;
+    try{ parsed = JSON.parse(text); } catch(e){ showToast("That file isn't valid JSON.", "error"); return; }
+    if(!parsed || !Array.isArray(parsed.bays)){ showToast("That JSON doesn't look like a Patch Sheet project file.", "error"); return; }
+    state = normalizeState(parsed);
+    ui.activeBay = {}; clearSelectionSilently();
+    markDirty();
+    renderAll();
+    showToast("Project imported.", "success");
+  }).catch(function(){ showToast("Couldn't read that file.", "error"); });
+}
+function handleImportCSV(file){
+  readFileText(file).then(function(text){
+    var rows = parseCSV(text);
+    if(rows.length < 2){ showToast("That CSV has no data rows.", "error"); return; }
+    var header = rows[0].map(function(h){ return h.trim().toLowerCase(); });
+    var col = {};
+    header.forEach(function(h,i){ col[h]=i; });
+    if(col.port_id === undefined || col.label === undefined){
+      showToast("That CSV is missing a port_id or label column.", "error"); return;
+    }
+    var portIndex = {}, bayOfPort = {}, gearIndex = {};
+    state.bays.forEach(function(b){
+      if(b.type === "rack"){ b.gear.forEach(function(g){ gearIndex[g.id] = g; }); }
+      else { b.ports.forEach(function(p){ portIndex[p.id] = p; bayOfPort[p.id] = b; }); }
+    });
+    var groupByName = {};
+    state.groups.forEach(function(g){ groupByName[g.name.trim().toLowerCase()] = g; });
+    var matched = 0, unmatched = 0;
+    for(var i=1;i<rows.length;i++){
+      var r = rows[i];
+      if(!r.length) continue;
+      var pid = (r[col.port_id]||"").trim();
+      var p = portIndex[pid];
+      var gItem = !p ? gearIndex[pid] : null;
+      if(!p && !gItem){ unmatched++; continue; }
+      matched++;
+      if(gItem){
+        gItem.name = col.label!==undefined ? (r[col.label]||"") : gItem.name;
+        gItem.notes = col.notes!==undefined ? (r[col.notes]||"") : gItem.notes;
+        if(col.gear_height_u !== undefined){
+          var hv = Number(r[col.gear_height_u]);
+          if(GEAR_HEIGHTS.indexOf(hv) !== -1) gItem.heightU = hv;
+        }
+        if(col.gear_width !== undefined){
+          var wv = (r[col.gear_width]||"").trim().toLowerCase();
+          if(wv==="full"||wv==="half") gItem.width = wv;
+        }
+        continue;
+      }
+      p.label = col.label!==undefined ? (r[col.label]||"") : p.label;
+      p.notes = col.notes!==undefined ? (r[col.notes]||"") : p.notes;
+      if(col.group !== undefined){
+        var gname = (r[col.group]||"").trim();
+        if(!gname){ p.groupId = null; }
+        else {
+          var key = gname.toLowerCase();
+          var g = groupByName[key];
+          if(!g){ g = addGroup(gname, nextPaletteColor()); groupByName[key] = g; }
+          p.groupId = g.id;
+        }
+      }
+      if(col.routing !== undefined){
+        var bay = bayOfPort[pid];
+        if(bay && bay.type === "trs"){
+          var rv = (r[col.routing]||"").trim().toLowerCase();
+          if(ROUTING_STATES.indexOf(rv) !== -1) setColumnState(bay, p.index, rv);
+        }
+      }
+    }
+    markDirty();
+    renderAll();
+    showToast("Imported " + matched + " label" + (matched===1?"":"s") + (unmatched ? " (" + unmatched + " unmatched)" : "") + ".", matched ? "success" : "error");
+  }).catch(function(){ showToast("Couldn't read that file.", "error"); });
+}
+
+/* ---------- restore banner ---------- */
+function renderRestoreBanner(draft){
+  var host = document.getElementById("restoreBannerHost");
+  if(!draft){ host.innerHTML=""; return; }
+  host.innerHTML =
+    '<div class="banner">' +
+      '<span>We found unsaved work from your last visit on this device.</span>' +
+      '<div class="toolbar-spacer"></div>' +
+      '<button class="btn btn-sm btn-primary" id="restoreBtn" type="button">Restore</button>' +
+      '<button class="btn btn-sm btn-ghost" id="discardBtn" type="button">Start fresh</button>' +
+    '</div>';
+  document.getElementById("restoreBtn").addEventListener("click", function(){
+    state = normalizeState(draft);
+    host.innerHTML = "";
+    ui.activeBay = {}; clearSelectionSilently();
+    renderAll();
+    showToast("Restored your last session.", "success");
+  });
+  document.getElementById("discardBtn").addEventListener("click", function(){
+    host.innerHTML = "";
+    saveLocalDraft();
+  });
+}
+
+/* ---------- global wiring ---------- */
+function renderAll(){
+  renderSectionTabs();
+  renderBayTabs();
+  renderGrid();
+  renderInspector();
+  renderMenus();
+}
+function init(){
+  initTheme();
+  initViewMode();
+  wireMenus();
+  document.getElementById("manageGroupsBtn").addEventListener("click", openGroupsModal);
+  document.getElementById("exportMenuBtn").addEventListener("click", function(e){ e.stopPropagation(); toggleMenu("exportMenu"); });
+  document.getElementById("importMenuBtn").addEventListener("click", function(e){ e.stopPropagation(); toggleMenu("importMenu"); });
+  document.addEventListener("click", function(){ closeAllMenus(); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){
+      if(ui.groupsModalOpen){ closeGroupsModal(); renderAll(); }
+      else if(ui.addRackModalOpen){ closeAddRackModal(); }
+      else if(ui.addGearModalOpen){ closeAddGearModal(); }
+      else if(ui.selection.length){ clearSelection(); }
+    }
+  });
+  document.getElementById("fileInputJson").addEventListener("change", function(e){
+    var f = e.target.files[0]; e.target.value = "";
+    if(f) handleImportJSON(f);
+  });
+  document.getElementById("fileInputCsv").addEventListener("change", function(e){
+    var f = e.target.files[0]; e.target.value = "";
+    if(f) handleImportCSV(f);
+  });
+
+  var draft = loadLocalDraft();
+  // Only offer restore if the draft has actual content beyond the untouched default.
+  var hasContent = draft && (draft.groups && draft.groups.length ||
+    (draft.bays||[]).some(function(b){ return (b.ports||[]).some(function(p){ return p.label || p.notes; }); }) ||
+    (draft.bays||[]).length !== 2);
+  renderAll();
+  if(hasContent) renderRestoreBanner(draft);
+  setSaveStatus(false);
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
