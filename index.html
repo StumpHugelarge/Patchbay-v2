@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Label and document your studio patchbays (XLR passthrough and TRS, 48pt or 64pt), color-code ports by device, and export or re-import your patch sheet.">
-<title>Patch·Configurator v2</title>
+<title>Patch·Configurator v3.1</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root{
     --bg:#E7EAE8; --surface:#FFFFFF; --surface-2:#F2F4F3;
     --metal:#C9CFCC; --metal-2:#BCC3BF; --metal-cell:#DBE0DD;
     --border:#C1C7C4; --border-strong:#9DA4A0;
-    --ink:#17181A; --ink-soft:#525855; --ink-faint:#7C837F;
+    --ink:#17181A; --ink-soft:#525855; --ink-faint:#5C625F;
     --accent:#2C8567; --accent-ink:#FFFFFF; --accent-soft:#DCEFE8;
     --danger:#B8442D; --danger-soft:#F6E1DC; --danger-ink:#FFFFFF;
     --radius-sm:4px; --radius-md:8px; --radius-lg:12px;
@@ -341,7 +341,7 @@
   <header class="topbar">
     <div class="brand">
       <span class="eyebrow">Carter's Studio Tools</span>
-      <span class="brand-mark">Patch<span>·</span>Configurator v2</span>
+      <span class="brand-mark">Patch<span>·</span>Configurator v3.1</span>
     </div>
     <div class="section-tabs" id="sectionTabs" role="tablist" aria-label="Patchbay type"></div>
     <div class="topbar-meta">
@@ -557,7 +557,8 @@ function makeGear(name, notes, heightU, width){
     name: String(name||"").slice(0,60),
     notes: String(notes||""),
     heightU: clampGearHeight(heightU),
-    width: width === "half" ? "half" : "full"
+    width: width === "half" ? "half" : "full",
+    groupId: null
   };
 }
 function indexOfGear(rack, gearId){
@@ -671,7 +672,8 @@ function normalizeState(raw){
           name: (g && typeof g.name === "string") ? g.name.slice(0,60) : "",
           notes: (g && typeof g.notes === "string") ? g.notes : "",
           heightU: clampGearHeight(g && g.heightU),
-          width: (g && g.width === "half") ? "half" : "full"
+          width: (g && g.width === "half") ? "half" : "full",
+          groupId: (g && g.groupId && groupIds[g.groupId]) ? g.groupId : null
         };
       }) : [];
       return {id: b.id || ("rack-"+uid()), type:"rack", name: String(b.name || "Rack"), size:null, heightU: clampRackHeight(b.heightU), gear: gearList};
@@ -900,22 +902,32 @@ function recolorGroup(id, color){
 }
 function deleteGroup(id){
   state.groups = state.groups.filter(function(g){ return g.id !== id; });
-  state.bays.forEach(function(b){ if(b.ports) b.ports.forEach(function(p){ if(p.groupId===id) p.groupId=null; }); });
+  state.bays.forEach(function(b){
+    if(b.ports) b.ports.forEach(function(p){ if(p.groupId===id) p.groupId=null; });
+    if(b.gear) b.gear.forEach(function(g){ if(g.groupId===id) g.groupId=null; });
+  });
   markDirty(); renderAll();
 }
 function groupUsage(id){
   var n = 0;
-  state.bays.forEach(function(b){ if(b.ports) b.ports.forEach(function(p){ if(p.groupId===id) n++; }); });
+  state.bays.forEach(function(b){
+    if(b.ports) b.ports.forEach(function(p){ if(p.groupId===id) n++; });
+    if(b.gear) b.gear.forEach(function(g){ if(g.groupId===id) n++; });
+  });
   return n;
 }
 function groupsUsedInBay(bay){
   var ids = {};
-  bay.ports.forEach(function(p){ if(p.groupId) ids[p.groupId] = true; });
+  if(bay.ports) bay.ports.forEach(function(p){ if(p.groupId) ids[p.groupId] = true; });
+  if(bay.gear) bay.gear.forEach(function(g){ if(g.groupId) ids[g.groupId] = true; });
   return state.groups.filter(function(g){ return ids[g.id]; });
 }
 function groupsUsedAcrossBays(bays){
   var ids = {};
-  bays.forEach(function(bay){ if(bay.ports) bay.ports.forEach(function(p){ if(p.groupId) ids[p.groupId] = true; }); });
+  bays.forEach(function(bay){
+    if(bay.ports) bay.ports.forEach(function(p){ if(p.groupId) ids[p.groupId] = true; });
+    if(bay.gear) bay.gear.forEach(function(g){ if(g.groupId) ids[g.groupId] = true; });
+  });
   return state.groups.filter(function(g){ return ids[g.id]; });
 }
 
@@ -1139,17 +1151,20 @@ var RACK_RU_PX = 40; // on-screen pixel height of one rack unit — must match t
                       // --ru custom property set inline on .rack-elevation below.
 function gearCellHtml(item, selectedSet){
   var g = item.gear;
+  var group = g.groupId ? getGroup(g.groupId) : null;
   var cls = "gear-piece";
   if(selectedSet[g.id]) cls += " is-selected";
   var top = item.topU * RACK_RU_PX;
   var height = g.heightU * RACK_RU_PX;
-  var styleParts = ["top:"+(top+2)+"px", "height:"+(height-4)+"px"];
+  var styleParts = ["top:"+(top+2)+"px", "height:"+(height-4)+"px",
+    "border-color:" + (group ? group.color : "var(--border-strong)"),
+    group ? "border-width:3px" : ""];
   if(item.side === "left"){ styleParts.push("left:2px", "width:calc(50% - 3px)"); }
   else if(item.side === "right"){ styleParts.push("right:2px", "width:calc(50% - 3px)"); }
   else { styleParts.push("left:2px", "right:2px"); }
   var nameHtml = g.name ? '<span class="gear-name">'+escapeHtml(g.name)+'</span>' : '<span class="gear-name placeholder">Unnamed</span>';
   var note = g.notes ? '<span class="note-dot" aria-hidden="true"></span>' : '';
-  var title = (g.name || "Unnamed") + " · " + g.heightU + "U" + (g.width==="half"?" half-width":"") + (g.notes ? " · " + g.notes : "");
+  var title = (g.name || "Unnamed") + " · " + g.heightU + "U" + (g.width==="half"?" half-width":"") + (group ? " · " + group.name : "") + (g.notes ? " · " + g.notes : "");
   return '<button type="button" class="'+cls+'" style="'+styleParts.join(";")+'" data-gear="'+g.id+'" title="'+escapeAttr(title)+'">' +
     '<span class="gear-u">'+g.heightU+'U</span>' + nameHtml + note + '</button>';
 }
@@ -1284,6 +1299,9 @@ function gearHeightSegHtml(active, id){
 function renderGearInGrid(g){
   var el = document.querySelector('.gear-piece[data-gear="'+cssEscape(g.id)+'"]');
   if(!el) return;
+  var group = g.groupId ? getGroup(g.groupId) : null;
+  el.style.borderColor = group ? group.color : "var(--border-strong)";
+  el.style.borderWidth = group ? "3px" : "";
   var nameEl = el.querySelector(".gear-name");
   if(nameEl){
     if(g.name){ nameEl.className = "gear-name"; nameEl.textContent = g.name; }
@@ -1292,7 +1310,7 @@ function renderGearInGrid(g){
   var existingDot = el.querySelector(".note-dot");
   if(g.notes && !existingDot){ var d=document.createElement("span"); d.className="note-dot"; el.appendChild(d); }
   if(!g.notes && existingDot){ existingDot.remove(); }
-  el.title = (g.name || "Unnamed") + " · " + g.heightU + "U" + (g.width==="half"?" half-width":"") + (g.notes ? " · " + g.notes : "");
+  el.title = (g.name || "Unnamed") + " · " + g.heightU + "U" + (g.width==="half"?" half-width":"") + (group ? " · " + group.name : "") + (g.notes ? " · " + g.notes : "");
 }
 function renderGearInspector(host, bay){
   var list = selectedGear(bay);
@@ -1311,6 +1329,8 @@ function renderGearInspector(host, bay){
       '</div></div></div>' +
     '<div class="field field-grow"><label for="gearNameInput">Name</label><input type="text" id="gearNameInput" value="'+escapeAttr(g.name)+'" placeholder="e.g. SSL Bus Compressor" maxlength="60" /></div>' +
     '<div class="field field-grow"><label for="gearNotesInput">Notes</label><input type="text" id="gearNotesInput" value="'+escapeAttr(g.notes)+'" placeholder="Optional — model, cable run, anything worth remembering" /></div>' +
+    '<div class="field"><label for="gearGroupSelect">Device group</label>' +
+      '<div class="group-picker"><select id="gearGroupSelect">'+groupOptionsHtml(g.groupId)+'</select></div></div>' +
     '<div class="field"><label>Width</label>'+gearWidthSegHtml(g.width, "gearWidthSeg")+'</div>' +
     '<div class="field"><label>Actions</label><div class="btn-row"><button class="btn btn-sm btn-danger" id="deleteGearBtn" type="button">Delete</button></div></div>' +
     '</div>';
@@ -1318,6 +1338,9 @@ function renderGearInspector(host, bay){
   nameInput.addEventListener("input", function(){ g.name = nameInput.value; renderGearInGrid(g); markDirty(); });
   var notesInput = document.getElementById("gearNotesInput");
   notesInput.addEventListener("input", function(){ g.notes = notesInput.value; renderGearInGrid(g); markDirty(); });
+  document.getElementById("gearGroupSelect").addEventListener("change", function(e){
+    g.groupId = e.target.value || null; renderGearInGrid(g); markDirty();
+  });
   var widthSeg = document.getElementById("gearWidthSeg");
   widthSeg.addEventListener("click", function(e){
     var btn = e.target.closest(".seg-btn"); if(!btn) return;
@@ -1908,10 +1931,12 @@ function drawBayCanvas(bay){
 function drawGearPiece(ctx, item, x, w, topPx, RU, colors){
   var y = topPx + 3;
   var h = item.gear.heightU*RU - 6;
+  var group = item.gear.groupId ? getGroup(item.gear.groupId) : null;
   ctx.fillStyle = colors.cellColor;
   roundRect(ctx, x, y, w, h, 8); ctx.fill();
-  ctx.lineWidth = 1.5; ctx.strokeStyle = colors.borderColor;
-  roundRect(ctx, x+0.75, y+0.75, w-1.5, h-1.5, 7); ctx.stroke();
+  ctx.lineWidth = group ? 4 : 1.5;
+  ctx.strokeStyle = group ? group.color : colors.borderColor;
+  roundRect(ctx, x+ctx.lineWidth/2, y+ctx.lineWidth/2, w-ctx.lineWidth, h-ctx.lineWidth, 7); ctx.stroke();
 
   ctx.fillStyle = colors.faintColor;
   ctx.font = "500 11px 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace";
@@ -1958,8 +1983,15 @@ function drawRackContent(ctx, rack, RU, leftPad, topY, colors, contentW){
 var RACK_CANVAS = {RU:52, ROWLABEL_W:34, CONTENT_W:640};
 function drawRackCanvas(rack){
   var MARGIN=44, TITLE_H=104, RU=RACK_CANVAS.RU, ROWLABEL_W=RACK_CANVAS.ROWLABEL_W, CONTENT_W=RACK_CANVAS.CONTENT_W;
+  var LEGEND_ROW_H=30, LEGEND_TOP=26;
   var canvasW = MARGIN + ROWLABEL_W + CONTENT_W + MARGIN;
-  var canvasH = TITLE_H + rack.heightU*RU + MARGIN;
+  var gridH = rack.heightU*RU;
+
+  var used = groupsUsedInBay(rack);
+  var probe = document.createElement("canvas");
+  var legendH = measureLegendHeight(probe.getContext("2d"), used, canvasW, MARGIN, LEGEND_TOP, LEGEND_ROW_H);
+  var canvasH = TITLE_H + gridH + legendH + MARGIN;
+
   var canvas = document.createElement("canvas");
   canvas.width = canvasW; canvas.height = canvasH;
   var ctx = canvas.getContext("2d");
@@ -1978,6 +2010,11 @@ function drawRackCanvas(rack){
   ctx.fillText("EXPORTED " + dateStr.toUpperCase(), canvasW-MARGIN, 74);
   ctx.textAlign="left";
   drawRackContent(ctx, rack, RU, MARGIN+ROWLABEL_W, TITLE_H, colors, CONTENT_W);
+
+  if(used.length){
+    drawLegend(ctx, used, canvasW, MARGIN, TITLE_H + gridH + LEGEND_TOP, LEGEND_ROW_H, colors.inkColor);
+  }
+
   return canvas;
 }
 // A single tall image stacking every bay in the session (grouped XLR-first,
@@ -2114,7 +2151,8 @@ function exportLabelsCSV(){
   state.bays.forEach(function(b){
     if(b.type === "rack"){
       b.gear.forEach(function(g, i){
-        rows.push([b.id, b.name, b.type, "", i+1, g.id, g.name, g.notes, "", "", g.heightU, g.width]);
+        var gg = g.groupId ? getGroup(g.groupId) : null;
+        rows.push([b.id, b.name, b.type, "", i+1, g.id, g.name, g.notes, gg?gg.name:"", "", g.heightU, g.width]);
       });
       return;
     }
@@ -2204,6 +2242,16 @@ function handleImportCSV(file){
         if(col.gear_width !== undefined){
           var wv = (r[col.gear_width]||"").trim().toLowerCase();
           if(wv==="full"||wv==="half") gItem.width = wv;
+        }
+        if(col.group !== undefined){
+          var gname2 = (r[col.group]||"").trim();
+          if(!gname2){ gItem.groupId = null; }
+          else {
+            var key2 = gname2.toLowerCase();
+            var g2 = groupByName[key2];
+            if(!g2){ g2 = addGroup(gname2, nextPaletteColor()); groupByName[key2] = g2; }
+            gItem.groupId = g2.id;
+          }
         }
         continue;
       }
