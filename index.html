@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patch·Configurator v5.3 BETA</title>
+<title>Patch·Configurator v5.4 BETA</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root{
@@ -274,6 +274,9 @@
 
   .panel-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin:0 4px 16px;}
   .panel-title{font-family:var(--font-display); font-weight:700; font-size:22px; letter-spacing:.01em; text-transform:uppercase; color:var(--ink);}
+  .panel-loc{margin:-10px 4px 12px;}
+  .panel-loc-btn{background:none; border:0; padding:0; cursor:pointer; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent);}
+  .panel-loc-btn:hover{text-decoration:underline;}
   .panel-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint);}
 
   .trs-row{display:flex; align-items:center; gap:10px; margin:0 4px;}
@@ -405,7 +408,7 @@
   .slot-jack.is-dim{opacity:.25;}
   .slot-jack .link-dot{position:absolute; top:-4px; right:-2px; width:7px; height:7px; border-radius:2px; background:var(--accent); transform:rotate(45deg);}
   body.is-picking .slot-jack:not(.is-dim){cursor:crosshair;}
-  .compare-wrap--stack{flex-direction:column; align-items:stretch; gap:20px;}
+  .compare-wrap--stack{flex-direction:column; flex-wrap:nowrap; align-items:stretch; gap:20px;}
   .compare-wrap--stack .compare-col{flex:none;}
   .insp-static{font-size:13px; padding:6px 0; color:var(--ink);}
 
@@ -438,7 +441,7 @@
   .lib-top{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
   .lib-top input[type="search"]{flex:1; min-width:160px;}
   /* ---------- Rack compare view (side-by-side, drag gear between racks) ---------- */
-  .compare-wrap{display:flex; gap:24px; align-items:flex-start;}
+  .compare-wrap{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;}
   .compare-col{display:flex; flex-direction:column; gap:10px; min-width:0; flex:none;}
   .compare-add{flex:none; align-self:flex-start; padding-top:2px;}
   .compare-picker{display:flex; align-items:center; gap:8px;}
@@ -707,6 +710,18 @@
   .flow-hint{margin:0; font-size:12.5px; color:var(--ink-soft);}
   .flow-chip.flow-chip-more{border-style:dashed; color:var(--ink-soft);}
   .print-head{display:none;}
+    /* rack picker dialog */
+  #rackPickBtn[hidden]{display:none;}
+  .rp-note{font-size:13px; color:var(--ink-soft, var(--ink)); margin:0;}
+  .rp-tools{display:flex; align-items:center; gap:8px;}
+  .rp-count{margin-left:auto; font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--ink-faint);}
+  .rp-list{display:flex; flex-direction:column; max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:var(--radius-sm);}
+  .rp-item{display:flex; align-items:center; gap:10px; padding:7px 10px; cursor:pointer; font-size:13px; border-top:1px solid var(--border);}
+  .rp-item:first-child{border-top:0;}
+  .rp-item:hover{background:var(--surface-2);}
+  .rp-item .rp-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rp-item .rp-meta{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em; color:var(--ink-faint);}
+  .rp-item .rp-here{font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent);}
     /* connect range dialog */
   .cr-form{display:flex; flex-direction:column; gap:12px;}
   .cr-row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
@@ -778,7 +793,7 @@
     <div class="topbar-left">
       <div class="brand">
         <span class="eyebrow">Carter's Studio Tools <span class="beta-badge" id="betaBadge" hidden title="Beta build: saves to its own storage, separate from your stable projects">Beta</span></span>
-        <span class="brand-mark">Patch<span>·</span>Configurator v5.3</span>
+        <span class="brand-mark">Patch<span>·</span>Configurator v5.4</span>
       </div>
       <div class="menu-wrap">
         <button class="btn btn-sm project-btn" id="projectBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Projects"><span class="project-name" id="projectName">Project</span><span class="project-caret">▾</span></button>
@@ -820,6 +835,7 @@
           <div class="menu menu--left" id="bayMenu" hidden role="menu"></div>
         </div>
         <div class="toolbar-spacer"></div>
+        <button class="btn btn-sm btn-ghost bay-only" id="rackPickBtn" type="button" hidden title="Choose which racks to show">Racks…</button>
         <div class="segmented bay-only" id="viewModeToggle" role="group" aria-label="View mode">
           <button type="button" class="seg-btn" data-mode="compact">Compact</button>
           <button type="button" class="seg-btn" data-mode="full">Full</button>
@@ -1086,6 +1102,7 @@ function updateViewModeToggle(){
   Array.prototype.forEach.call(host.querySelectorAll(".seg-btn"), function(btn){
     btn.classList.toggle("is-active", btn.getAttribute("data-mode") === ui.viewMode);
   });
+  updateRackPickBtn();
 }
 function setViewMode(mode){
   if(mode !== "compact" && mode !== "full" && mode !== "compare") return;
@@ -1094,6 +1111,125 @@ function setViewMode(mode){
   try{ localStorage.setItem(VIEWMODE_KEY, mode); }catch(e){ /* ignore */ }
   updateViewModeToggle();
   renderGrid();
+}
+/* ---------- which racks to show (Full and Compare views) ---------- */
+// Full view keeps a "hidden" set per section type, so a rack added later shows
+// up by default. The rack you're working in (the active one) is never hidden —
+// the Inspector always points at something on screen — so picking a hidden rack
+// from the tabs, search or a link brings it back on its own. Compare keeps its
+// own column list (ui.compareIds); the same dialog edits whichever view is on.
+var RACKHIDE_KEY = NS + ".rackhidden.v1";
+function rackHiddenMap(type){
+  if(!ui.rackHidden || typeof ui.rackHidden !== "object") ui.rackHidden = {};
+  if(!ui.rackHidden[type] || typeof ui.rackHidden[type] !== "object") ui.rackHidden[type] = {};
+  return ui.rackHidden[type];
+}
+function saveRackHidden(){ try{ localStorage.setItem(RACKHIDE_KEY, JSON.stringify(ui.rackHidden || {})); }catch(e){ /* ignore */ } }
+function loadRackHidden(){
+  ui.rackHidden = {};
+  try{
+    var o = JSON.parse(localStorage.getItem(RACKHIDE_KEY));
+    if(o && typeof o === "object") Object.keys(o).forEach(function(t){
+      if(o[t] && typeof o[t] === "object"){ ui.rackHidden[t] = {}; Object.keys(o[t]).forEach(function(id){ if(o[t][id] === true) ui.rackHidden[t][id] = true; }); }
+    });
+  }catch(e){ /* ignore */ }
+}
+function shownBays(type){
+  var map = rackHiddenMap(type), list = baysOfType(type);
+  ensureActiveBay(type);
+  var a = ui.activeBay[type];
+  if(a && map[a]){ delete map[a]; saveRackHidden(); }
+  return list.filter(function(b){ return !map[b.id]; });
+}
+function rackNoun(type, plural){
+  var n = type === "rack" ? "rack" : type === "chassis" ? "chassis" : type === "snake" ? "snake" : "bay";
+  return plural && n !== "chassis" ? n + "s" : n;
+}
+function rackPickable(){ return ui.viewMode !== "compact" && ui.section !== "clock" && ui.section !== "flow" && baysOfType(ui.section).length > 1; }
+function updateRackPickBtn(){
+  var btn = document.getElementById("rackPickBtn");
+  if(!btn) return;
+  var show = rackPickable();
+  btn.hidden = !show;
+  if(!show) return;
+  var type = ui.section, total = baysOfType(type).length, n;
+  if(ui.viewMode === "compare" && isGearSection(type)) n = compareColumns(type).length;
+  else { var map = rackHiddenMap(type), a = ui.activeBay[type]; n = baysOfType(type).filter(function(b){ return !map[b.id] || b.id === a; }).length; }
+  var noun = rackNoun(type, true); noun = noun.charAt(0).toUpperCase() + noun.slice(1);
+  btn.textContent = noun + (n < total ? " (" + n + " of " + total + ")" : "") + "…";
+  btn.title = "Choose which " + rackNoun(type, true) + " to show";
+}
+function bayMetaText(b){
+  return b.type === "trs" ? b.size + "pt" : b.type === "rack" ? b.heightU + "U" : b.type === "chassis" ? b.slots + (b.slots === 1 ? " slot" : " slots") : b.type === "snake" ? b.sends + "×" + b.returns : "";
+}
+function openRackPicker(){
+  if(!rackPickable()) return;
+  var type = ui.section, list = baysOfType(type), compare = ui.viewMode === "compare" && isGearSection(type);
+  var noun = rackNoun(type, false), nouns = rackNoun(type, true);
+  ensureActiveBay(type);
+  var activeId = ui.activeBay[type];
+  var on = {};
+  (compare ? compareColumns(type) : shownBays(type)).forEach(function(b){ on[b.id] = true; });
+  var items = list.map(function(b){
+    var meta = bayMetaText(b);
+    return '<label class="rp-item"><input type="checkbox" data-rp-id="'+b.id+'"'+(on[b.id] ? " checked" : "")+' />' +
+      '<span class="rp-name">'+escapeHtml(b.name)+'</span>' +
+      (b.id === activeId ? '<span class="rp-here">working in</span>' : '') +
+      (meta ? '<span class="rp-meta">'+meta+'</span>' : '') + '</label>';
+  }).join("");
+  openDialog({
+    title: compare ? "Compare which " + nouns + "?" : "Show which " + nouns + "?",
+    width: 420,
+    bodyHtml:
+      '<p class="rp-note">' + (compare
+        ? 'Checked ' + nouns + ' are shown side by side. Pick at least two.'
+        : 'Checked ' + nouns + ' are shown in Full view. The ' + noun + ' you are working in always stays on screen.') + '</p>' +
+      '<div class="rp-tools"><button type="button" class="btn btn-sm btn-ghost" data-rp="all">All</button>' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-rp="none">None</button><span class="rp-count" id="rpCount"></span></div>' +
+      '<div class="rp-list" id="rpList">'+items+'</div>',
+    buttons: [
+      {label:"Cancel"},
+      {label:"Show these", cls:"btn-primary", primary:true, onClick:function(root){
+        var checked = {}, n = 0;
+        Array.prototype.forEach.call(root.querySelectorAll("[data-rp-id]"), function(cb){ if(cb.checked){ checked[cb.getAttribute("data-rp-id")] = true; n++; } });
+        if(compare){
+          if(n < 2){ showToast("Pick at least two " + nouns + " to compare.", "error"); return false; }
+          var cur = cmpList(type), next = cur.filter(function(id){ return checked[id]; });
+          list.forEach(function(b){ if(checked[b.id] && next.indexOf(b.id) === -1) next.push(b.id); });
+          cur.length = 0; next.forEach(function(id){ cur.push(id); });
+          if(next.indexOf(ui.activeBay[type]) === -1){ ui.activeBay[type] = next[0]; clearSelectionSilently(); }
+        } else {
+          var map = rackHiddenMap(type);
+          list.forEach(function(b){ if(checked[b.id]) delete map[b.id]; else map[b.id] = true; });
+          if(!checked[ui.activeBay[type]]){
+            var first = list.filter(function(b){ return checked[b.id]; })[0];
+            if(first){ ui.activeBay[type] = first.id; clearSelectionSilently(); }
+            else delete map[ui.activeBay[type]]; // none picked: keep the one you're working in
+          }
+          saveRackHidden();
+        }
+        renderAll();
+      }}
+    ],
+    onOpen:function(root){
+      function count(){
+        var all = root.querySelectorAll("[data-rp-id]"), n = 0;
+        Array.prototype.forEach.call(all, function(cb){ if(cb.checked) n++; });
+        root.querySelector("#rpCount").textContent = n + " of " + all.length;
+      }
+      root.addEventListener("change", count);
+      root.addEventListener("click", function(e){
+        var b = e.target.closest("[data-rp]"); if(!b) return;
+        var all = b.getAttribute("data-rp") === "all";
+        Array.prototype.forEach.call(root.querySelectorAll("[data-rp-id]"), function(cb){
+          cb.checked = all ? true : (cb.getAttribute("data-rp-id") === activeId);
+        });
+        count();
+      });
+      count();
+    },
+    focus:".rp-item input"
+  });
 }
 var INSPCOLLAPSE_KEY = NS + ".inspcollapsed.v1";
 function inspectorIsSide(){ try{ return window.matchMedia("(min-width:1100px)").matches; }catch(e){ return false; } }
@@ -1122,6 +1258,9 @@ function initViewMode(){
   var stored = null;
   try{ stored = localStorage.getItem(VIEWMODE_KEY); }catch(e){ /* ignore */ }
   ui.viewMode = (stored === "full") ? "full" : "compact";
+  loadRackHidden();
+  var pickBtn = document.getElementById("rackPickBtn");
+  if(pickBtn) pickBtn.addEventListener("click", openRackPicker);
   updateViewModeToggle();
   var host = document.getElementById("viewModeToggle");
   if(host){
@@ -1416,8 +1555,36 @@ function makeGear(name, notes, heightU, width){
     ins: 0, outs: 0,                  // how many input / output channels it has (see "signal-flow links")
     chLabels: {},                     // optional names for those channels, keyed "in1", "out2"…
     chKinds: {},                      // channels that carry clock instead of audio, keyed "in1": "clock"
-    clock: ""                         // clock map role: "" (only if a clock cable touches it), "master" or "follower"
+    clock: "",                        // clock map role: "" (only if a clock cable touches it), "master" or "follower"
+    bayId: null                       // rack gear only: the XLR / TRS bay this piece physically is ("patchbay for…")
   };
+}
+// The rack piece that is physically this XLR / TRS bay (see "Patchbay for" in the gear Inspector).
+function gearForBay(bayId){
+  for(var i = 0; i < state.bays.length; i++){
+    var r = state.bays[i];
+    if(r.type !== "rack") continue;
+    for(var j = 0; j < r.gear.length; j++){ if(r.gear[j].bayId === bayId) return {rack:r, gear:r.gear[j]}; }
+  }
+  return null;
+}
+// The XLR / TRS bay a rack piece stands for, or null.
+function bayOfGear(g){
+  var b = g && g.bayId ? getBay(g.bayId) : null;
+  return b && (b.type === "xlr" || b.type === "trs") ? b : null;
+}
+// "U5–6" for a piece in a rack (rows are counted from the top, starting at U1).
+function gearUText(rack, g){
+  var it = layoutRackGear(rack).items.filter(function(x){ return x.gear === g; })[0];
+  if(!it) return "";
+  return "U" + (it.topU + 1) + (g.heightU > 1 ? "–" + (it.topU + g.heightU) : "") + (g.width === "half" ? " " + gearSide(g) : "");
+}
+// Where a patchbay bay physically lives, taken from the rack piece that stands for it.
+function bayLocation(bay){
+  var f = gearForBay(bay.id);
+  if(!f) return null;
+  var u = gearUText(f.rack, f.gear);
+  return {rack:f.rack, gear:f.gear, text:f.rack.name + (u ? " · " + u : "")};
 }
 function indexOfGear(rack, gearId){
   for(var i=0;i<rack.gear.length;i++){ if(rack.gear[i].id===gearId) return i; }
@@ -1902,7 +2069,8 @@ function normalizeState(raw){
           ins: isChassis ? 0 : clampChannels(g && g.ins), outs: isChassis ? 0 : clampChannels(g && g.outs),
           chLabels: isChassis ? {} : cleanChLabels(g && g.chLabels, g && g.ins, g && g.outs),
           chKinds: isChassis ? {} : cleanChKinds(g && g.chKinds, g && g.ins, g && g.outs),
-          clock: (!isChassis && g && (g.clock === "master" || g.clock === "follower")) ? g.clock : ""
+          clock: (!isChassis && g && (g.clock === "master" || g.clock === "follower")) ? g.clock : "",
+          bayId: (!isChassis && g && typeof g.bayId === "string" && g.bayId) ? g.bayId.slice(0, 80) : null
         };
       }) : [];
       if(isChassis){
@@ -1946,6 +2114,16 @@ function normalizeState(raw){
     return out;
   });
   if(bays.length === 0) return base;
+  // a gear piece can stand for one XLR / TRS bay; drop links to bays that are gone, aren't patchbays, or already have a piece
+  var bayLinkTaken = {}, bayKind = {};
+  bays.forEach(function(b){ if(b.type === "xlr" || b.type === "trs") bayKind[b.id] = true; });
+  bays.forEach(function(b){
+    if(b.type !== "rack") return;
+    (b.gear || []).forEach(function(g){
+      if(g.bayId && (!bayKind[g.bayId] || bayLinkTaken[g.bayId])) g.bayId = null;
+      if(g.bayId) bayLinkTaken[g.bayId] = true;
+    });
+  });
   var result = {version:2, name:projName, bays:bays, groups:groups, links:[], cableTypes:null, diagram:null};
   // cable types: a missing list means "the standard list"; an empty list stays empty
   var ctIds = {};
@@ -2994,6 +3172,8 @@ function bayPanelInnerHtml(bay){
   var subtitle = bay.type==="xlr" ? "16 × XLR-F Passthrough" : (bay.size + "-Point TRS Bantam");
   html += '<div class="panel-head"><span class="panel-title">'+escapeHtml(bay.name)+'</span>' +
     '<span class="panel-sub">'+subtitle+'</span></div>';
+  var loc = bayLocation(bay);
+  if(loc) html += '<div class="panel-loc"><button type="button" class="panel-loc-btn" data-goto-gear="'+loc.gear.id+'" data-goto-rack="'+loc.rack.id+'" title="Show this patchbay in its rack">Mounted in '+escapeHtml(loc.text)+' ›</button></div>';
   if(bay.type === "xlr"){
     html += '<div class="port-row xlr-row">' + portCellsHtml(bay,bay.ports,set) + '</div>';
   } else {
@@ -3213,6 +3393,10 @@ function selectJack(bay, jackId){
   renderInspector();
 }
 function wireBayPanelEvents(container, bay){
+  var gotoBtn = container.querySelector("[data-goto-gear]");
+  if(gotoBtn) gotoBtn.addEventListener("click", function(){
+    jumpToResult({kind:"gear", bayId:gotoBtn.getAttribute("data-goto-rack"), itemId:gotoBtn.getAttribute("data-goto-gear")});
+  });
   if(isGearBay(bay)){
     Array.prototype.forEach.call(container.querySelectorAll(".slot-jack"), function(btn){
       btn.addEventListener("click", function(e){
@@ -3355,7 +3539,7 @@ function renderGridCompact(host){
   if(isGearBay(bay)) wireGearDragAndDrop(host);
 }
 function renderGridFull(host){
-  var list = baysOfType(ui.section);
+  var list = shownBays(ui.section);
   if(!list.length){
     host.innerHTML = emptySectionHtml();
     return;
@@ -3375,7 +3559,7 @@ function renderGridFull(host){
 // to a rack of its own (ui.compareIds), independent of which rack is "active"
 // — clicking or dropping into a column only changes what the Inspector shows,
 // never which racks are on screen or where.
-var COMPARE_MAX = 4;
+var COMPARE_MAX = 99; // no practical cap: pick as many as fit; columns wrap onto the next line
 function cmpType(){ return ui.section === "chassis" ? "chassis" : "rack"; }
 // The pinned columns for a section type (always an array on a per-type map).
 function cmpList(type){
@@ -3707,6 +3891,21 @@ function renderJackInspector(host, bay, jackId){
   var addMod = document.getElementById("jackAddModuleBtn");
   if(addMod) addMod.addEventListener("click", function(){ openAddGearModal(bay.id, {topU: pj.slot - 1, side: "full"}); });
 }
+// "Patchbay for": ties a rack piece to the XLR / TRS bay it physically is, so the
+// Diagram draws one box and the bay shows where it is mounted.
+function patchbayForFieldHtml(g){
+  var taken = {};
+  state.bays.forEach(function(r){ if(r.type === "rack") r.gear.forEach(function(x){ if(x !== g && x.bayId) taken[x.bayId] = true; }); });
+  var cur = bayOfGear(g);
+  var opts = '<option value="">— not a patchbay —</option>' + state.bays.filter(function(b){
+    return (b.type === "xlr" || b.type === "trs") && (!taken[b.id] || (cur && cur.id === b.id));
+  }).map(function(b){
+    return '<option value="'+b.id+'"'+(cur && cur.id === b.id ? " selected" : "")+'>'+escapeHtml(b.name)+' ('+(b.type === "trs" ? "TRS " + b.size + "pt" : "XLR")+')</option>';
+  }).join("");
+  return '<div class="field"><label for="gearBayLink">Patchbay for</label>' +
+    '<div class="photo-row"><select id="gearBayLink" title="Pick the XLR or TRS bay this piece is. The Diagram then shows one box instead of two.">'+opts+'</select>' +
+    (cur ? '<button class="btn btn-sm btn-ghost" id="gearBayOpenBtn" type="button">Open bay</button>' : '') + '</div></div>';
+}
 function renderGearInspector(host, bay){
   var chassis = bay.type === "chassis";
   if(chassis && ui.selection.length === 1 && parseSlotJack(ui.selection[0]) && parseSlotJack(ui.selection[0]).bayId === bay.id){
@@ -3773,6 +3972,7 @@ function renderGearInspector(host, bay){
       '<div class="group-picker"><select id="gearGroupSelect">'+groupOptionsHtml(g.groupId)+'</select></div></div>' +
     (chassis ? '<div class="field"><label>Width</label>'+gearHeightSegHtml(g.heightU, "gearSpanSeg", true)+'</div>' : '<div class="field"><label>Width</label>'+gearWidthSegHtml(g.width, "gearWidthSeg")+'</div>') +
     (chassis ? '' : '<div class="field"><label>Clock</label>'+clockRoleSegHtml(g.clock, "gearClockSeg")+'</div>') +
+    (chassis ? '' : patchbayForFieldHtml(g)) +
     '<div class="field"><label>Photo</label><div class="photo-row">' +
       (hasPhoto(g.photoId)
         ? '<span class="photo-thumb photo-bg gph-'+g.photoId+'" aria-hidden="true"></span>'
@@ -3829,6 +4029,13 @@ function renderGearInspector(host, bay){
   document.getElementById("gearGroupSelect").addEventListener("change", function(e){
     g.groupId = e.target.value || null; renderGearInGrid(g); markDirty();
   });
+  var bayLinkSel = document.getElementById("gearBayLink");
+  if(bayLinkSel) bayLinkSel.addEventListener("change", function(){
+    g.bayId = bayLinkSel.value || null;
+    historyBreak(); markDirty(); renderAll();
+  });
+  var bayOpenBtn = document.getElementById("gearBayOpenBtn");
+  if(bayOpenBtn) bayOpenBtn.addEventListener("click", function(){ if(bayOfGear(g)) jumpToResult({kind:"bay", bayId:g.bayId}); });
   var clockSeg = document.getElementById("gearClockSeg");
   if(clockSeg) clockSeg.addEventListener("click", function(e){
     var b = e.target.closest(".seg-btn"); if(!b) return;
@@ -5195,6 +5402,7 @@ function copyBayData(bayRaw, srcGroups, name, sameProject, srcLinks){
     raw.gear = (raw.gear || []).map(function(g){
       var c = {}; Object.keys(g).forEach(function(k){ c[k] = g[k]; });
       c.id = "gear-" + uid(); c.groupId = mapGroup(g.groupId);
+      c.bayId = null; // a copy never claims the original's patchbay
       for(var i = 1; i <= clampChannels(g.ins); i++) epMap[gearChId(g.id, "in", i)] = gearChId(c.id, "in", i);
       for(var j = 1; j <= clampChannels(g.outs); j++) epMap[gearChId(g.id, "out", j)] = gearChId(c.id, "out", j);
       return c;
@@ -8187,7 +8395,11 @@ function fTrunc(s, n){ s = String(s == null ? "" : s); return s.length > n ? s.s
 function flowBuildGraph(showAll){
   var used = {}, nodes = [], nodeOfEp = {};
   linkList().forEach(function(l){ used[l.from] = true; used[l.to] = true; });
-  function want(id){ return showAll || !!used[id]; }
+  // "Show every jack" adds the unused jacks of boxes that already have cables. It never
+  // adds a box with no cables at all (an empty twin of a patchbay, say), so a box counts
+  // as "in use" when at least one of its own jacks carries a cable.
+  var boxUsed = false;
+  function want(id){ return !!used[id] || (showAll && boxUsed); }
   function addNode(n){
     n.idx = nodes.length; nodes.push(n);
     n.rows.forEach(function(r, ri){
@@ -8200,11 +8412,14 @@ function flowBuildGraph(showAll){
     if(bay.type === "rack"){
       bay.gear.forEach(function(g){
         var ins = [], outs = [], i;
+        boxUsed = false;
+        for(i = 1; i <= (g.ins || 0); i++) if(used[gearChId(g.id, "in", i)]) boxUsed = true;
+        for(i = 1; i <= (g.outs || 0); i++) if(used[gearChId(g.id, "out", i)]) boxUsed = true;
         for(i = 1; i <= (g.ins || 0); i++){ var iid = gearChId(g.id, "in", i); if(want(iid)) ins.push(getEndpoint(iid)); }
         for(i = 1; i <= (g.outs || 0); i++){ var oid = gearChId(g.id, "out", i); if(want(oid)) outs.push(getEndpoint(oid)); }
         if(!ins.length && !outs.length) return;
         var grp = g.groupId ? getGroup(g.groupId) : null;
-        var n = {id:g.id, kind:"gear", title:gearDisplayName(g), sub:bay.name, color:grp ? grp.color : null, w:FLOW.W_GEAR, rows:[]};
+        var n = {id:g.id, kind:"gear", title:gearDisplayName(g), sub:bay.name + (bayOfGear(g) ? " · same unit as " + bayOfGear(g).name : ""), color:grp ? grp.color : null, w:FLOW.W_GEAR, rows:[]};
         for(var r = 0; r < Math.max(ins.length, outs.length); r++){
           var le = ins[r] || null, re = outs[r] || null;
           n.rows.push({l:le, r:re, ll:le ? (epTypedLabel(le) || ("In " + le.n)) : "", rl:re ? (epTypedLabel(re) || ("Out " + re.n)) : ""});
@@ -8213,6 +8428,8 @@ function flowBuildGraph(showAll){
       });
     } else if(bay.type === "chassis"){
       var rows = [];
+      boxUsed = false;
+      for(var sn0 = 1; sn0 <= bay.slots; sn0++) if(used[slotJackId(bay.id, sn0, "in")] || used[slotJackId(bay.id, sn0, "out")]) boxUsed = true;
       for(var sn = 1; sn <= bay.slots; sn++){
         var ie = getEndpoint(slotJackId(bay.id, sn, "in")), oe = getEndpoint(slotJackId(bay.id, sn, "out"));
         var wi = ie && want(ie.id), wo = oe && want(oe.id);
@@ -8223,13 +8440,17 @@ function flowBuildGraph(showAll){
       if(rows.length) addNode({id:bay.id, kind:"bay", title:bay.name, sub:bay.slots + " slot 500 series", color:null, w:FLOW.W_CHASSIS, rows:rows});
     } else {
       var prow = [];
+      boxUsed = bay.ports.some(function(p){ return !!used[p.id]; });
       bay.ports.forEach(function(p){
         if(!want(p.id)) return;
         var ep = getEndpoint(p.id);
         var pre = bay.type === "trs" ? (p.row === "top" ? "T" : "B") + p.index : bay.type === "snake" ? (p.row === "return" ? "R" : "S") + p.index : String(p.index);
         prow.push({l:ep, r:ep, label:pre + (p.label ? "  " + p.label : "")});
       });
-      if(prow.length) addNode({id:bay.id, kind:"bay", title:bay.name, sub:bay.type === "trs" ? "TRS " + bay.size + "pt patchbay" : bay.type === "snake" ? "Snake" : "XLR bay", color:null, w:FLOW.W_BAY, rows:prow});
+      if(prow.length){
+        var loc = bayLocation(bay), locGrp = loc && loc.gear.groupId ? getGroup(loc.gear.groupId) : null;
+        addNode({id:bay.id, kind:"bay", title:bay.name, sub:(bay.type === "trs" ? "TRS " + bay.size + "pt patchbay" : bay.type === "snake" ? "Snake" : "XLR bay") + (loc ? " · " + loc.text : ""), color:locGrp ? locGrp.color : null, w:FLOW.W_BAY, rows:prow});
+      }
     }
   });
   var edges = [];
@@ -8577,7 +8798,7 @@ function renderFlowTab(host){
   var html = '<div class="flow-tab"><div class="flow-bar">' +
     '<div class="segmented" role="group" aria-label="Layout"><button type="button" class="seg-btn'+(manual ? '' : ' is-active')+'" data-flow-mode="auto" title="Boxes are laid out for you">Auto</button><button type="button" class="seg-btn'+(manual ? ' is-active' : '')+'" data-flow-mode="manual" title="Drag the boxes where you want them">Manual</button></div>' +
     (manual && !ro ? '<button type="button" class="btn btn-sm btn-ghost" data-flow-reset>Reset layout</button>' : '') +
-    '<label class="flow-trace"><input type="checkbox" data-flow-showall'+(ui.flowShowAll ? ' checked' : '')+' /> Show every jack</label>' +
+    '<label class="flow-trace" title="Also draws the jacks that have no cable yet, on boxes that already have cables"><input type="checkbox" data-flow-showall'+(ui.flowShowAll ? ' checked' : '')+' /> Show every jack</label>' +
     '<span class="flow-zoom"><button type="button" class="btn btn-sm btn-ghost" data-flow-zoom="out" aria-label="Zoom out">−</button><button type="button" class="btn btn-sm btn-ghost" data-flow-zoom="fit">Fit</button><button type="button" class="btn btn-sm btn-ghost" data-flow-zoom="one">100%</button><button type="button" class="btn btn-sm btn-ghost" data-flow-zoom="in" aria-label="Zoom in">+</button></span>' +
     (ro ? '' : '<button type="button" class="btn btn-sm" data-flow-types>Cable types…</button>') +
     '<span class="clk-sum" id="flowSummary">'+m.nodes.length+(m.nodes.length === 1 ? ' box' : ' boxes')+' · '+total+(total === 1 ? ' cable' : ' cables')+(counts[""] ? ' · '+counts[""]+' untyped' : '')+'</span>' +
