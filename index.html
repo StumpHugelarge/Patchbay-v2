@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patch·Configurator v5.4 BETA</title>
+<title>Patch·Configurator v5.5 BETA</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root{
@@ -793,7 +793,7 @@
     <div class="topbar-left">
       <div class="brand">
         <span class="eyebrow">Carter's Studio Tools <span class="beta-badge" id="betaBadge" hidden title="Beta build: saves to its own storage, separate from your stable projects">Beta</span></span>
-        <span class="brand-mark">Patch<span>·</span>Configurator v5.4</span>
+        <span class="brand-mark">Patch<span>·</span>Configurator v5.5</span>
       </div>
       <div class="menu-wrap">
         <button class="btn btn-sm project-btn" id="projectBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Projects"><span class="project-name" id="projectName">Project</span><span class="project-caret">▾</span></button>
@@ -8665,9 +8665,9 @@ function flowSvg(model, opts){
   function d(pts){ return "M" + pts.map(function(p){ return p[0] + " " + p[1]; }).join(" L"); }
   vis.forEach(function(e){
     var l = e.link, inPath = !pathSet || pathSet[l.id] || sel[l.id], dash = l.clk ? ' stroke-dasharray="6 3"' : '';
-    if(sel[l.id]) s += '<path d="'+d(e.pts)+'" fill="none" stroke="#FFFFFF" stroke-opacity=".6" stroke-width="5.5" stroke-linejoin="round"/>';
-    s += '<path d="'+d(e.pts)+'" fill="none" stroke="'+cableColor(l)+'" stroke-width="'+(pathSet && inPath ? 2.6 : 1.5)+'" stroke-linejoin="round" opacity="'+(inPath ? 1 : FLOW_DIM)+'"'+dash+'/>';
-    if(!exp) s += '<path class="flow-hit" data-flow-link="'+escapeAttr(l.id)+'" d="'+d(e.pts)+'" fill="none" stroke="transparent" stroke-width="9" pointer-events="stroke"/>';
+    if(sel[l.id]) s += '<path class="flow-halo" d="'+d(e.pts)+'" fill="none" stroke="#FFFFFF" stroke-opacity=".6" stroke-width="5.5" stroke-linejoin="round"/>';
+    s += '<path data-flow-cable="'+escapeAttr(l.id)+'" d="'+d(e.pts)+'" fill="none" stroke="'+cableColor(l)+'" stroke-width="'+(pathSet && inPath ? 2.6 : 1.5)+'" stroke-linejoin="round" opacity="'+(inPath ? 1 : FLOW_DIM)+'"'+dash+'/>';
+    if(!exp) s += '<path class="flow-hit" data-flow-link="'+escapeAttr(l.id)+'" d="'+d(e.pts)+'" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke"/>';
   });
   var inColor = {}, outColor = {};
   edges.forEach(function(e){
@@ -8751,6 +8751,27 @@ function flowSelectLinks(ids, additive, focus){
   ids.forEach(function(id){ if(additive && ui.flowSel[id] && ids.length === 1) delete ui.flowSel[id]; else ui.flowSel[id] = true; });
   ui.flowFocus = focus && focus.length ? focus : null;
   renderGrid(); renderInspector();
+}
+// Shift / Cmd / Ctrl-click on a cable while nothing is being traced: only the white halo changes, so the drawing is not
+// rebuilt and the hand cursor stays under the pointer while you pick several cables in a row.
+function flowToggleLinkInPlace(id){
+  var svg = document.getElementById("flowSvg"), cable = null;
+  if(svg){ var all = svg.querySelectorAll("path[data-flow-cable]"); for(var i = 0; i < all.length; i++){ if(all[i].getAttribute("data-flow-cable") === id){ cable = all[i]; break; } } }
+  if(!cable){ flowSelectLinks([id], true, null); return; }
+  var prev = cable.previousElementSibling, halo = prev && prev.getAttribute("class") === "flow-halo" ? prev : null;
+  if(ui.flowSel[id]){
+    delete ui.flowSel[id];
+    if(halo && halo.parentNode) halo.parentNode.removeChild(halo);
+  } else {
+    ui.flowSel[id] = true;
+    if(!halo){
+      halo = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      halo.setAttribute("class", "flow-halo"); halo.setAttribute("d", cable.getAttribute("d")); halo.setAttribute("fill", "none");
+      halo.setAttribute("stroke", "#FFFFFF"); halo.setAttribute("stroke-opacity", ".6"); halo.setAttribute("stroke-width", "5.5"); halo.setAttribute("stroke-linejoin", "round");
+      cable.parentNode.insertBefore(halo, cable);
+    }
+  }
+  renderInspector();
 }
 function flowClearSelection(){ ui.flowSel = {}; ui.flowRowSel = {}; ui.flowFocus = null; }
 // A click on one port row: its cables are selected, and a plain click also traces them from start to finish.
@@ -8844,7 +8865,12 @@ function flowTabClick(e){
   if(chip){ var k = chip.getAttribute("data-flow-chip"); if(ui.flowHidden[k]) delete ui.flowHidden[k]; else ui.flowHidden[k] = true; renderGrid(); return; }
   var shift = e.shiftKey || e.metaKey || e.ctrlKey;
   var lk = t.closest("[data-flow-link]");
-  if(lk){ var id = lk.getAttribute("data-flow-link"); flowSelectLinks([id], shift, shift ? null : [id]); return; }
+  if(lk){
+    var id = lk.getAttribute("data-flow-link");
+    if(shift && !ui.flowFocus) flowToggleLinkInPlace(id);
+    else flowSelectLinks([id], shift, shift ? null : [id]);
+    return;
+  }
   var rowEl = t.closest("[data-flow-eps]");
   if(rowEl){ flowSelectRow(rowEl.getAttribute("data-flow-eps").split(" ").filter(Boolean), shift); return; }
   var nodeEl = t.closest("[data-flow-node]");
